@@ -4,7 +4,7 @@ use winit::{
     application::ApplicationHandler,
     event::*,
     event_loop::{ActiveEventLoop, EventLoop},
-    keyboard::{KeyCode, PhysicalKey},
+    keyboard::PhysicalKey,
     window::Window,
 };
 
@@ -13,21 +13,7 @@ use wasm_bindgen::prelude::*;
 #[cfg(target_arch = "wasm32")]
 use winit::platform::web::EventLoopExtWebSys;
 
-pub struct State {
-    window: Arc<Window>,
-}
-
-impl State {
-    pub async fn new(window: Arc<Window>) -> anyhow::Result<Self> {
-        Ok(Self { window })
-    }
-
-    pub fn resize(&mut self, _width: u32, _height: u32) {}
-
-    pub fn render(&mut self) {
-        self.window.request_redraw();
-    }
-}
+use crate::state::State;
 
 pub struct App {
     #[cfg(target_arch = "wasm32")]
@@ -153,8 +139,16 @@ impl ApplicationHandler<State> for App {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(size) => state.resize(size.width, size.height),
             WindowEvent::RedrawRequested => {
-                state.render();
+                state.update();
+                match state.render() {
+                    Ok(_) => {}
+                    Err(e) => {
+                        log::error!("{e}");
+                        event_loop.exit();
+                    }
+                }
             }
+
             WindowEvent::KeyboardInput {
                 event:
                     KeyEvent {
@@ -163,10 +157,7 @@ impl ApplicationHandler<State> for App {
                         ..
                     },
                 ..
-            } => match (code, key_state.is_pressed()) {
-                (KeyCode::Escape, true) => event_loop.exit(),
-                _ => {}
-            },
+            } => state.handle_key(event_loop, code, key_state.is_pressed()),
             _ => {}
         }
     }
