@@ -5,7 +5,7 @@ use winit::window::Window;
 
 use crate::gpu::GpuContext;
 
-pub struct RenderWindow {
+pub(crate) struct RenderWindow {
     window: Arc<Window>,
     surface: Surface<'static>,
     config: SurfaceConfiguration,
@@ -13,7 +13,7 @@ pub struct RenderWindow {
 }
 
 impl RenderWindow {
-    async fn new(
+    pub(crate) fn new(
         window: Arc<Window>,
         gpu: &GpuContext,
         surface: Surface<'static>,
@@ -40,6 +40,7 @@ impl RenderWindow {
             color_space: wgpu::SurfaceColorSpace::Auto,
         };
 
+        surface.configure(&gpu.device, &config);
         Ok(Self {
             window,
             surface,
