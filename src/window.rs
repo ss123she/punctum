@@ -20,7 +20,6 @@ impl RenderWindow {
         config: &RenderConfig,
     ) -> anyhow::Result<RenderWindow> {
         let size = window.inner_size();
-
         let surface_caps = surface.get_capabilities(&gpu.adapter);
 
         let surface_format = surface_caps
@@ -29,6 +28,7 @@ impl RenderWindow {
             .find(|f| f.is_srgb())
             .copied()
             .unwrap_or(surface_caps.formats[0]);
+
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
@@ -41,12 +41,16 @@ impl RenderWindow {
             color_space: wgpu::SurfaceColorSpace::Auto,
         };
 
-        surface.configure(&gpu.device, &surface_config);
+        let is_surface_configured = size.width > 0 && size.height > 0;
+        if is_surface_configured {
+            surface.configure(&gpu.device, &surface_config);
+        }
+
         Ok(Self {
             window,
             surface,
             surface_config,
-            is_surface_configured: true,
+            is_surface_configured,
         })
     }
 
@@ -56,6 +60,8 @@ impl RenderWindow {
             self.surface_config.height = height;
             self.surface.configure(&gpu.device, &self.surface_config);
             self.is_surface_configured = true;
+        } else {
+            self.is_surface_configured = false;
         }
     }
 
@@ -63,6 +69,10 @@ impl RenderWindow {
         &mut self,
         gpu: &GpuContext,
     ) -> anyhow::Result<Option<SurfaceTexture>> {
+        if !self.is_surface_configured {
+            return Ok(None);
+        }
+
         let output = match self.surface.get_current_texture() {
             wgpu::CurrentSurfaceTexture::Success(surface_texture) => surface_texture,
             wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => surface_texture,
