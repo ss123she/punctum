@@ -2,11 +2,14 @@ use std::sync::Arc;
 
 use winit::window::Window;
 
-use crate::{gpu::GpuContext, punctum::RenderConfig, window::RenderWindow};
+use crate::{
+    gpu::GpuContext, pipeline::RenderPipeline, punctum::RenderConfig, window::RenderWindow,
+};
 
 pub struct State {
     gpu: GpuContext,
     render_window: RenderWindow,
+    pipeline: RenderPipeline,
 }
 
 impl State {
@@ -23,11 +26,16 @@ impl State {
         });
 
         let surface = instance.create_surface(window.clone()).unwrap();
-
         let gpu = GpuContext::new(&instance, Some(&surface)).await?;
-        let render_window = RenderWindow::new(window, &gpu, surface, config)?;
+        let render_window = RenderWindow::new(window, &gpu, surface, &config)?;
 
-        Ok(Self { gpu, render_window })
+        let pipeline = RenderPipeline::new(&gpu, render_window.surface_config(), &config)?;
+
+        Ok(Self {
+            gpu,
+            render_window,
+            pipeline,
+        })
     }
 
     pub(crate) fn update(&mut self) {}
@@ -51,7 +59,7 @@ impl State {
             });
 
         {
-            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
@@ -72,6 +80,9 @@ impl State {
                 timestamp_writes: None,
                 multiview_mask: None,
             });
+
+            render_pass.set_pipeline(&self.pipeline.render_pipeline); // 2.
+            render_pass.draw(0..3, 0..1); // 3.
         }
 
         self.gpu.queue.submit(std::iter::once(encoder.finish()));

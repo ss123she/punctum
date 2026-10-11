@@ -8,7 +8,7 @@ use crate::{gpu::GpuContext, punctum::RenderConfig};
 pub(crate) struct RenderWindow {
     window: Arc<Window>,
     surface: Surface<'static>,
-    config: SurfaceConfiguration,
+    surface_config: SurfaceConfiguration,
     is_surface_configured: bool,
 }
 
@@ -17,7 +17,7 @@ impl RenderWindow {
         window: Arc<Window>,
         gpu: &GpuContext,
         surface: Surface<'static>,
-        config: RenderConfig,
+        config: &RenderConfig,
     ) -> anyhow::Result<RenderWindow> {
         let size = window.inner_size();
 
@@ -29,7 +29,7 @@ impl RenderWindow {
             .find(|f| f.is_srgb())
             .copied()
             .unwrap_or(surface_caps.formats[0]);
-        let config = wgpu::SurfaceConfiguration {
+        let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
             width: size.width,
@@ -41,20 +41,20 @@ impl RenderWindow {
             color_space: wgpu::SurfaceColorSpace::Auto,
         };
 
-        surface.configure(&gpu.device, &config);
+        surface.configure(&gpu.device, &surface_config);
         Ok(Self {
             window,
             surface,
-            config,
+            surface_config,
             is_surface_configured: true,
         })
     }
 
     pub(crate) fn resize(&mut self, gpu: &GpuContext, width: u32, height: u32) {
         if width > 0 && height > 0 {
-            self.config.width = width;
-            self.config.height = height;
-            self.surface.configure(&gpu.device, &self.config);
+            self.surface_config.width = width;
+            self.surface_config.height = height;
+            self.surface.configure(&gpu.device, &self.surface_config);
             self.is_surface_configured = true;
         }
     }
@@ -72,7 +72,7 @@ impl RenderWindow {
                 return Ok(None);
             }
             wgpu::CurrentSurfaceTexture::Outdated => {
-                self.surface.configure(&gpu.device, &self.config);
+                self.surface.configure(&gpu.device, &self.surface_config);
                 return Ok(None);
             }
             wgpu::CurrentSurfaceTexture::Lost => {
@@ -81,6 +81,10 @@ impl RenderWindow {
         };
 
         Ok(Some(output))
+    }
+
+    pub(crate) fn surface_config(&self) -> &SurfaceConfiguration {
+        &self.surface_config
     }
 
     pub(crate) fn window(&self) -> &Window {

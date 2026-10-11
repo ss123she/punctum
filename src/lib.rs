@@ -1,4 +1,5 @@
 mod gpu;
+mod pipeline;
 mod punctum;
 mod runner;
 mod state;
