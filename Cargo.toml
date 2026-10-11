@@ -2,6 +2,9 @@
 name = "punctum"
 version = "0.1.0"
 edition = "2024"
+exclude = [
+    ".cargo",
+]
 
 [lib]
 crate-type = ["cdylib", "rlib"]

@@ -3,16 +3,16 @@ use winit::event_loop::EventLoop;
 
 use crate::runner::Runner;
 
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
+
 const DEFAULT_SHADER: &'static str = r#"
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
 };
 
-// VS
 @vertex
-fn vs_main(
-    @builtin(vertex_index) in_vertex_index: u32,
-) -> VertexOutput {
+fn vs_main(@builtin(vertex_index) in_vertex_index: u32) -> VertexOutput {
     var out: VertexOutput;
     let x = f32(1 - i32(in_vertex_index)) * 0.5;
     let y = f32(i32(in_vertex_index & 1u) * 2 - 1) * 0.5;
@@ -20,7 +20,6 @@ fn vs_main(
     return out;
 }
 
-// FS
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     return vec4<f32>(0.3, 0.2, 0.1, 1.0);
@@ -32,6 +31,7 @@ pub(crate) struct WindowConfig {
     pub(crate) title: String,
     pub(crate) width: u32,
     pub(crate) height: u32,
+    pub(crate) canvas_id: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -57,6 +57,7 @@ impl Default for Builder {
                 title: "Punctum".to_string(),
                 width: 1366,
                 height: 768,
+                canvas_id: None,
             },
             render: RenderConfig {
                 present_mode: PresentMode::Fifo,
@@ -87,6 +88,11 @@ impl Builder {
         self
     }
 
+    pub fn with_canvas_id(mut self, id: impl Into<String>) -> Self {
+        self.window.canvas_id = Some(id.into());
+        self
+    }
+
     fn build(self) -> AppConfig {
         AppConfig {
             window: self.window,
@@ -101,17 +107,41 @@ impl Builder {
         env_logger::init();
 
         #[cfg(target_arch = "wasm32")]
-        console_log::init_with_level(log::Level::Info).unwrap_throw();
+        {
+            use wasm_bindgen::UnwrapThrowExt;
+            use winit::platform::web::EventLoopExtWebSys;
+            console_error_panic_hook::set_once();
+            let _ = console_log::init_with_level(log::Level::Info);
+        }
 
         let event_loop = EventLoop::with_user_event().build()?;
+
+        #[allow(unused_mut)]
         let mut runner = Runner::new(config, &event_loop);
 
         #[cfg(not(target_arch = "wasm32"))]
         event_loop.run_app(&mut runner)?;
 
         #[cfg(target_arch = "wasm32")]
-        event_loop.spawn_app(runner);
+        {
+            use winit::platform::web::EventLoopExtWebSys;
+            event_loop.spawn_app(runner);
+        }
 
         Ok(())
     }
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+pub fn start(canvas_id: Option<String>) -> Result<(), wasm_bindgen::JsValue> {
+    use wasm_bindgen::UnwrapThrowExt;
+
+    let mut b = builder();
+    if let Some(id) = canvas_id {
+        b = b.with_canvas_id(id);
+    }
+    b.run().unwrap_throw();
+
+    Ok(())
 }

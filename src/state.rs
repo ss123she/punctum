@@ -41,8 +41,6 @@ impl State {
     pub(crate) fn update(&mut self) {}
 
     pub(crate) fn render(&mut self) -> anyhow::Result<()> {
-        self.render_window.window().request_redraw();
-
         let Some(output) = self.render_window.get_current_texture(&self.gpu)? else {
             return Ok(());
         };
@@ -81,8 +79,8 @@ impl State {
                 multiview_mask: None,
             });
 
-            render_pass.set_pipeline(&self.pipeline.render_pipeline); // 2.
-            render_pass.draw(0..3, 0..1); // 3.
+            render_pass.set_pipeline(&self.pipeline.render_pipeline);
+            render_pass.draw(0..3, 0..1);
         }
 
         self.gpu.queue.submit(std::iter::once(encoder.finish()));
@@ -93,5 +91,9 @@ impl State {
 
     pub(crate) fn resize(&mut self, width: u32, height: u32) {
         self.render_window.resize(&self.gpu, width, height);
+    }
+
+    pub(crate) fn window(&self) -> &Window {
+        self.render_window.window()
     }
 }

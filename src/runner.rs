@@ -9,11 +9,6 @@ use winit::{
     window::Window,
 };
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-#[cfg(target_arch = "wasm32")]
-use winit::platform::web::EventLoopExtWebSys;
-
 use crate::{punctum::AppConfig, state::State};
 
 pub struct Runner {
@@ -35,20 +30,11 @@ impl Runner {
             proxy,
         }
     }
-
-    #[cfg(target_arch = "wasm32")]
-    #[wasm_bindgen(start)]
-    pub fn run_web() -> Result<(), wasm_bindgen::JsValue> {
-        console_error_panic_hook::set_once();
-        run().unwrap_throw();
-
-        Ok(())
-    }
 }
 
 impl ApplicationHandler<State> for Runner {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        if self.state.is_some() {
+        if self.state.is_some() || self.config.is_none() {
             return;
         }
 
@@ -64,13 +50,26 @@ impl ApplicationHandler<State> for Runner {
             use wasm_bindgen::JsCast;
             use winit::platform::web::WindowAttributesExtWebSys;
 
-            const CANVAS_ID: &str = "canvas";
+            let window = web_sys::window().unwrap();
+            let document = window.document().unwrap();
 
-            let window = wgpu::web_sys::window().unwrap_throw();
-            let document = window.document().unwrap_throw();
-            let canvas = document.get_element_by_id(CANVAS_ID).unwrap_throw();
-            let html_canvas_element = canvas.unchecked_into();
-            window_attributes = window_attributes.with_canvas(Some(html_canvas_element));
+            let target_id = config.window.canvas_id.as_deref().unwrap_or("canvas");
+
+            let canvas = document
+                .get_element_by_id(target_id)
+                .and_then(|el| el.dyn_into::<web_sys::HtmlCanvasElement>().ok())
+                .unwrap_or_else(|| {
+                    let canvas = document
+                        .create_element("canvas")
+                        .unwrap()
+                        .dyn_into::<web_sys::HtmlCanvasElement>()
+                        .unwrap();
+                    canvas.set_id(target_id);
+                    document.body().unwrap().append_child(&canvas).unwrap();
+                    canvas
+                });
+
+            window_attributes = window_attributes.with_canvas(Some(canvas));
         }
 
         let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
@@ -89,10 +88,10 @@ impl ApplicationHandler<State> for Runner {
                             .send_event(
                                 State::new(window, config.render)
                                     .await
-                                    .expect("Unable to create canvas!!!")
+                                    .expect("Unable to create State on canvas")
                             )
                             .is_ok()
-                    )
+                    );
                 });
             }
         }
@@ -102,11 +101,9 @@ impl ApplicationHandler<State> for Runner {
     fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut event: State) {
         #[cfg(target_arch = "wasm32")]
         {
-            event.window.request_redraw();
-            event.resize(
-                event.window.inner_size().width,
-                event.window.inner_size().height,
-            );
+            let size = event.window().inner_size();
+            event.resize(size.width, size.height);
+            event.window().request_redraw();
         }
         self.state = Some(event);
     }
@@ -114,13 +111,17 @@ impl ApplicationHandler<State> for Runner {
     fn window_event(
         &mut self,
         event_loop: &ActiveEventLoop,
-        _window_id: winit::window::WindowId,
+        window_id: winit::window::WindowId,
         event: WindowEvent,
     ) {
         let state = match &mut self.state {
             Some(canvas) => canvas,
             None => return,
         };
+
+        if window_id != state.window().id() {
+            return;
+        }
 
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
@@ -147,6 +148,12 @@ impl ApplicationHandler<State> for Runner {
             } => event_loop.exit(),
 
             _ => {}
+        }
+    }
+
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        if let Some(state) = &self.state {
+            state.window().request_redraw();
         }
     }
 }
