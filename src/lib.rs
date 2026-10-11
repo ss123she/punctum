@@ -1,7 +1,8 @@
-pub(crate) mod gpu;
-pub mod punctum;
-pub(crate) mod runner;
-pub(crate) mod state;
-pub(crate) mod window;
+mod gpu;
+mod punctum;
+mod runner;
+mod state;
+mod window;
 
-pub use punctum::run;
+pub use punctum::{Builder, builder};
+pub use wgpu;

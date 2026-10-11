@@ -3,7 +3,7 @@ use std::sync::Arc;
 use wgpu::{Surface, SurfaceConfiguration, SurfaceTexture};
 use winit::window::Window;
 
-use crate::gpu::GpuContext;
+use crate::{gpu::GpuContext, punctum::RenderConfig};
 
 pub(crate) struct RenderWindow {
     window: Arc<Window>,
@@ -17,6 +17,7 @@ impl RenderWindow {
         window: Arc<Window>,
         gpu: &GpuContext,
         surface: Surface<'static>,
+        config: RenderConfig,
     ) -> anyhow::Result<RenderWindow> {
         let size = window.inner_size();
 
@@ -33,7 +34,7 @@ impl RenderWindow {
             format: surface_format,
             width: size.width,
             height: size.height,
-            present_mode: surface_caps.present_modes[0],
+            present_mode: config.present_mode,
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
             desired_maximum_frame_latency: 2,

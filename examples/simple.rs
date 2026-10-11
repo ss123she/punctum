@@ -1,3 +1,3 @@
-fn main() {
-    let _ = punctum::run();
+fn main() -> anyhow::Result<()> {
+    punctum::builder().run()
 }

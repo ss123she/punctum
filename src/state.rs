@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use winit::window::Window;
 
-use crate::{gpu::GpuContext, window::RenderWindow};
+use crate::{gpu::GpuContext, punctum::RenderConfig, window::RenderWindow};
 
 pub struct State {
     gpu: GpuContext,
@@ -10,7 +10,7 @@ pub struct State {
 }
 
 impl State {
-    pub(crate) async fn new(window: Arc<Window>) -> anyhow::Result<Self> {
+    pub(crate) async fn new(window: Arc<Window>, config: RenderConfig) -> anyhow::Result<Self> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             #[cfg(not(target_arch = "wasm32"))]
             backends: wgpu::Backends::PRIMARY,
@@ -25,7 +25,7 @@ impl State {
         let surface = instance.create_surface(window.clone()).unwrap();
 
         let gpu = GpuContext::new(&instance, Some(&surface)).await?;
-        let render_window = RenderWindow::new(window, &gpu, surface)?;
+        let render_window = RenderWindow::new(window, &gpu, surface, config)?;
 
         Ok(Self { gpu, render_window })
     }

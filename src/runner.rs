@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use winit::{
     application::ApplicationHandler,
+    dpi::PhysicalSize,
     event::*,
     event_loop::{ActiveEventLoop, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
@@ -13,20 +14,22 @@ use wasm_bindgen::prelude::*;
 #[cfg(target_arch = "wasm32")]
 use winit::platform::web::EventLoopExtWebSys;
 
-use crate::state::State;
+use crate::{punctum::AppConfig, state::State};
 
 pub struct Runner {
     #[cfg(target_arch = "wasm32")]
     proxy: Option<winit::event_loop::EventLoopProxy<State>>,
     state: Option<State>,
+    config: Option<AppConfig>,
 }
 
 impl Runner {
-    pub fn new(_event_loop: &EventLoop<State>) -> Self {
+    pub fn new(config: AppConfig, _event_loop: &EventLoop<State>) -> Self {
         #[cfg(target_arch = "wasm32")]
         let proxy = Some(_event_loop.create_proxy());
 
         Self {
+            config: Some(config),
             state: None,
             #[cfg(target_arch = "wasm32")]
             proxy,
@@ -45,8 +48,16 @@ impl Runner {
 
 impl ApplicationHandler<State> for Runner {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        if self.state.is_some() {
+            return;
+        }
+
+        let config = self.config.take().expect("AppConfig is missing");
+
         #[allow(unused_mut)]
-        let mut window_attributes = Window::default_attributes();
+        let mut window_attributes = Window::default_attributes()
+            .with_title(config.window.title)
+            .with_inner_size(PhysicalSize::new(config.window.width, config.window.height));
 
         #[cfg(target_arch = "wasm32")]
         {
@@ -66,7 +77,7 @@ impl ApplicationHandler<State> for Runner {
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            self.state = Some(pollster::block_on(State::new(window)).unwrap());
+            self.state = Some(pollster::block_on(State::new(window, config.render)).unwrap());
         }
 
         #[cfg(target_arch = "wasm32")]
@@ -76,7 +87,7 @@ impl ApplicationHandler<State> for Runner {
                     assert!(
                         proxy
                             .send_event(
-                                State::new(window)
+                                State::new(window, config.render)
                                     .await
                                     .expect("Unable to create canvas!!!")
                             )
