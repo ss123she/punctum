@@ -1,0 +1,87 @@
+use std::sync::Arc;
+
+use wgpu::{Surface, SurfaceConfiguration, SurfaceTexture};
+use winit::window::Window;
+
+use crate::gpu::GpuContext;
+
+pub struct RenderWindow {
+    window: Arc<Window>,
+    surface: Surface<'static>,
+    config: SurfaceConfiguration,
+    is_surface_configured: bool,
+}
+
+impl RenderWindow {
+    async fn new(
+        window: Arc<Window>,
+        gpu: &GpuContext,
+        surface: Surface<'static>,
+    ) -> anyhow::Result<RenderWindow> {
+        let size = window.inner_size();
+
+        let surface_caps = surface.get_capabilities(&gpu.adapter);
+
+        let surface_format = surface_caps
+            .formats
+            .iter()
+            .find(|f| f.is_srgb())
+            .copied()
+            .unwrap_or(surface_caps.formats[0]);
+        let config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: surface_format,
+            width: size.width,
+            height: size.height,
+            present_mode: surface_caps.present_modes[0],
+            alpha_mode: surface_caps.alpha_modes[0],
+            view_formats: vec![],
+            desired_maximum_frame_latency: 2,
+            color_space: wgpu::SurfaceColorSpace::Auto,
+        };
+
+        Ok(Self {
+            window,
+            surface,
+            config,
+            is_surface_configured: true,
+        })
+    }
+
+    pub(crate) fn resize(&mut self, gpu: &GpuContext, width: u32, height: u32) {
+        if width > 0 && height > 0 {
+            self.config.width = width;
+            self.config.height = height;
+            self.surface.configure(&gpu.device, &self.config);
+            self.is_surface_configured = true;
+        }
+    }
+
+    pub(crate) fn get_current_texture(
+        &mut self,
+        gpu: &GpuContext,
+    ) -> anyhow::Result<Option<SurfaceTexture>> {
+        let output = match self.surface.get_current_texture() {
+            wgpu::CurrentSurfaceTexture::Success(surface_texture) => surface_texture,
+            wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => surface_texture,
+            wgpu::CurrentSurfaceTexture::Timeout
+            | wgpu::CurrentSurfaceTexture::Occluded
+            | wgpu::CurrentSurfaceTexture::Validation => {
+                return Ok(None);
+            }
+            wgpu::CurrentSurfaceTexture::Outdated => {
+                self.surface.configure(&gpu.device, &self.config);
+                return Ok(None);
+            }
+            wgpu::CurrentSurfaceTexture::Lost => {
+                anyhow::bail!("Lost device");
+            }
+        };
+
+        Ok(Some(output))
+    }
+
+    pub(crate) fn window(&self) -> &Window {
+        &self.window
+    }
+}
