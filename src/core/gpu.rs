@@ -1,7 +1,7 @@
-pub struct GpuContext {
-    pub device: wgpu::Device,
-    pub queue: wgpu::Queue,
-    pub adapter: wgpu::Adapter,
+pub(crate) struct GpuContext {
+    pub(crate) device: wgpu::Device,
+    pub(crate) queue: wgpu::Queue,
+    pub(crate) adapter: wgpu::Adapter,
 }
 
 impl GpuContext {

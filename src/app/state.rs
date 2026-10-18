@@ -3,7 +3,7 @@ use std::sync::Arc;
 use winit::window::Window;
 
 use crate::{
-    core::{gpu::GpuContext, window::RenderWindow},
+    core::{GpuContext, RenderWindow},
     pipeline::RenderPipeline,
     punctum::RenderConfig,
 };
