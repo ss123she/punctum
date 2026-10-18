@@ -1,3 +1,6 @@
+pub(crate) mod compute;
+pub(crate) mod render;
+
 use crate::{core::gpu::GpuContext, punctum::RenderConfig};
 
 pub(crate) struct RenderPipeline {
