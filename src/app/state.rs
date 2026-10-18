@@ -3,19 +3,24 @@ use std::sync::Arc;
 use winit::window::Window;
 
 use crate::{
+    ComputeConfig, RenderConfig,
     core::{GpuContext, RenderWindow},
-    pipeline::RenderPipeline,
-    punctum::RenderConfig,
+    pipeline::{ComputePipeline, RenderPipeline},
 };
 
 pub struct State {
     gpu: GpuContext,
     render_window: RenderWindow,
-    pipeline: RenderPipeline,
+    compute_pipeline: ComputePipeline,
+    render_pipeline: RenderPipeline,
 }
 
 impl State {
-    pub(crate) async fn new(window: Arc<Window>, config: RenderConfig) -> anyhow::Result<Self> {
+    pub(crate) async fn new(
+        window: Arc<Window>,
+        compute_config: &ComputeConfig,
+        render_config: &RenderConfig,
+    ) -> anyhow::Result<Self> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             #[cfg(not(target_arch = "wasm32"))]
             backends: wgpu::Backends::PRIMARY,
@@ -29,14 +34,17 @@ impl State {
 
         let surface = instance.create_surface(window.clone()).unwrap();
         let gpu = GpuContext::new(&instance, Some(&surface)).await?;
-        let render_window = RenderWindow::new(window, &gpu, surface, &config)?;
+        let render_window = RenderWindow::new(window, &gpu, surface, render_config)?;
 
-        let pipeline = RenderPipeline::new(&gpu, render_window.surface_config(), &config)?;
+        let compute_pipeline = ComputePipeline::new(&gpu, compute_config)?;
+        let render_pipeline =
+            RenderPipeline::new(&gpu, render_window.surface_config(), render_config)?;
 
         Ok(Self {
             gpu,
             render_window,
-            pipeline,
+            render_pipeline,
+            compute_pipeline,
         })
     }
 
@@ -55,8 +63,16 @@ impl State {
             .gpu
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
+                label: Some("Frame Encoder"),
             });
+
+        {
+            let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                label: Some("Compute Pass"),
+                timestamp_writes: None,
+            });
+            self.compute_pipeline.dispatch(&mut cpass, 64, 1, 1);
+        }
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -81,7 +97,7 @@ impl State {
                 multiview_mask: None,
             });
 
-            render_pass.set_pipeline(&self.pipeline.render_pipeline);
+            render_pass.set_pipeline(&self.render_pipeline.render_pipeline);
             render_pass.draw(0..3, 0..1);
         }
 

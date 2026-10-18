@@ -9,7 +9,7 @@ use winit::{
     window::Window,
 };
 
-use crate::{app::state::State, punctum::AppConfig};
+use crate::{AppConfig, app::state::State};
 
 pub struct Runner {
     #[cfg(target_arch = "wasm32")]
@@ -76,7 +76,9 @@ impl ApplicationHandler<State> for Runner {
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            self.state = Some(pollster::block_on(State::new(window, config.render)).unwrap());
+            self.state = Some(
+                pollster::block_on(State::new(window, &config.compute, &config.render)).unwrap(),
+            );
         }
 
         #[cfg(target_arch = "wasm32")]

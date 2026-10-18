@@ -1,53 +1,18 @@
 use wgpu::PresentMode;
 use winit::event_loop::EventLoop;
 
-use crate::app::runner::Runner;
+use crate::{AppConfig, ComputeConfig, RenderConfig, WindowConfig, app::runner::Runner};
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
-const DEFAULT_SHADER: &'static str = r#"
-struct VertexOutput {
-    @builtin(position) clip_position: vec4<f32>,
-};
-
-@vertex
-fn vs_main(@builtin(vertex_index) in_vertex_index: u32) -> VertexOutput {
-    var out: VertexOutput;
-    let x = f32(1 - i32(in_vertex_index)) * 0.5;
-    let y = f32(i32(in_vertex_index & 1u) * 2 - 1) * 0.5;
-    out.clip_position = vec4<f32>(x, y, 0.0, 1.0);
-    return out;
-}
-
-@fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(0.3, 0.2, 0.1, 1.0);
-}
-"#;
-
-#[derive(Debug, Clone)]
-pub(crate) struct WindowConfig {
-    pub(crate) title: String,
-    pub(crate) width: u32,
-    pub(crate) height: u32,
-    pub(crate) canvas_id: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct RenderConfig {
-    pub(crate) present_mode: PresentMode,
-    pub(crate) shader_text: String,
-}
-
-pub(crate) struct AppConfig {
-    pub(crate) window: WindowConfig,
-    pub(crate) render: RenderConfig,
-}
+const DEFAULT_RENDER_SHADER: &'static str = include_str!("pipeline\\default_render.wgsl");
+const DEFAULT_COMPUTE_SHADER: &'static str = include_str!("pipeline\\default_compute.wgsl");
 
 pub struct Builder {
     window: WindowConfig,
     render: RenderConfig,
+    compute: ComputeConfig,
 }
 
 impl Default for Builder {
@@ -61,7 +26,11 @@ impl Default for Builder {
             },
             render: RenderConfig {
                 present_mode: PresentMode::Fifo,
-                shader_text: DEFAULT_SHADER.to_string(),
+                shader_text: DEFAULT_RENDER_SHADER.to_string(),
+            },
+            compute: ComputeConfig {
+                shader_text: DEFAULT_COMPUTE_SHADER.to_string(),
+                entry_point: "main".to_string(),
             },
         }
     }
@@ -97,6 +66,7 @@ impl Builder {
         AppConfig {
             window: self.window,
             render: self.render,
+            compute: self.compute,
         }
     }
 

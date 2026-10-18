@@ -3,7 +3,7 @@ use std::sync::Arc;
 use wgpu::{Surface, SurfaceConfiguration, SurfaceTexture};
 use winit::window::Window;
 
-use crate::{core::GpuContext, punctum::RenderConfig};
+use crate::{RenderConfig, core::GpuContext};
 
 pub(crate) struct RenderWindow {
     window: Arc<Window>,

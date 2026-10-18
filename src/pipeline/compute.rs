@@ -1,12 +1,7 @@
-use crate::core::GpuContext;
+use crate::{ComputeConfig, core::GpuContext};
 
 pub struct ComputePipeline {
     pub(crate) compute_pipeline: wgpu::ComputePipeline,
-}
-
-pub struct ComputeConfig {
-    pub shader_text: String,
-    pub entry_point: String,
 }
 
 impl ComputePipeline {
