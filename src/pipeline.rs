@@ -1,4 +1,4 @@
-use crate::{gpu::GpuContext, punctum::RenderConfig};
+use crate::{core::gpu::GpuContext, punctum::RenderConfig};
 
 pub(crate) struct RenderPipeline {
     pub(crate) render_pipeline: wgpu::RenderPipeline,

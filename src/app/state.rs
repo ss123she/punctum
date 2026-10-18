@@ -3,7 +3,9 @@ use std::sync::Arc;
 use winit::window::Window;
 
 use crate::{
-    gpu::GpuContext, pipeline::RenderPipeline, punctum::RenderConfig, window::RenderWindow,
+    core::{gpu::GpuContext, window::RenderWindow},
+    pipeline::RenderPipeline,
+    punctum::RenderConfig,
 };
 
 pub struct State {
