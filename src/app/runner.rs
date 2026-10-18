@@ -9,7 +9,7 @@ use winit::{
     window::Window,
 };
 
-use crate::{punctum::AppConfig, state::State};
+use crate::{app::state::State, punctum::AppConfig};
 
 pub struct Runner {
     #[cfg(target_arch = "wasm32")]

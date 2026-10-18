@@ -1,7 +1,7 @@
 use wgpu::PresentMode;
 use winit::event_loop::EventLoop;
 
-use crate::runner::Runner;
+use crate::app::runner::Runner;
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
