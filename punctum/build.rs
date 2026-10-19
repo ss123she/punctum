@@ -27,12 +27,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if !found_kernels.is_empty() {
         let shadow_crate_dir = get_workspace_target_dir().join("punctum_shaders");
-        generate_shadow_crate(&shadow_crate_dir, &found_kernels)?;
+        let cached_spv = shadow_crate_dir.join("current_kernels.spv");
 
-        println!(
-            "cargo:warning=Shadow crate successfully generated in: {}",
-            shadow_crate_dir.display()
-        );
+        let code_changed = generate_shadow_crate(&shadow_crate_dir, &found_kernels)?;
+
+        if !code_changed && cached_spv.exists() {
+            println!("cargo:rustc-env=COMPUTE_SPV={}", cached_spv.display());
+            return Ok(());
+        }
 
         match compile_shader_crate(&shadow_crate_dir) {
             Ok(spv_path) => {
@@ -110,7 +112,7 @@ fn get_workspace_target_dir() -> PathBuf {
 fn generate_shadow_crate(
     dir: &Path,
     kernels: &[syn::ItemFn],
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<bool, Box<dyn std::error::Error>> {
     let src_dir = dir.join("src");
     fs::create_dir_all(&src_dir)?;
 
@@ -159,9 +161,21 @@ spirv-std = "0.11"
         #(#transformed_kernels)*
     };
 
-    fs::write(src_dir.join("lib.rs"), lib_rs.to_string())?;
+    let new_code = lib_rs.to_string();
+    let lib_path = src_dir.join("lib.rs");
 
-    Ok(())
+    let code_changed = if lib_path.exists() {
+        let old_code = fs::read_to_string(&lib_path)?;
+        old_code != new_code
+    } else {
+        true
+    };
+
+    if code_changed {
+        fs::write(&lib_path, new_code)?;
+    }
+
+    Ok(code_changed)
 }
 
 fn compile_shader_crate(crate_path: &PathBuf) -> Result<PathBuf, Box<dyn std::error::Error>> {

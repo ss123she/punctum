@@ -23,7 +23,7 @@ pub fn gradient(
 
 fn main() -> anyhow::Result<()> {
     punctum::builder()
-        .with_title("Awesome Engine")
+        .with_title("Awesome Engine!")
         .with_kernel(gradient)
         .with_size(900, 800)
         .run()
