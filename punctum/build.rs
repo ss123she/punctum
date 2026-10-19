@@ -19,10 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     scan_directory("examples", &mut found_kernels)?;
 
     for kernel in &found_kernels {
-        println!(
-            "cargo:warning=Found kernel: {}",
-            kernel.sig.ident.to_string()
-        );
+        println!("cargo:warning=Found kernel: {}", kernel.sig.ident);
     }
 
     if !found_kernels.is_empty() {
@@ -44,7 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("cargo:warning=Error in shader code: {}", e);
 
                 let dummy_spv = get_workspace_target_dir().join("dummy.spv");
-                let _ = std::fs::write(&dummy_spv, &[0u8; 4]);
+                let _ = std::fs::write(&dummy_spv, [0u8; 4]);
                 println!("cargo:rustc-env=COMPUTE_SPV={}", dummy_spv.display());
             }
         }
