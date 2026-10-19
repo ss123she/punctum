@@ -1,3 +1,8 @@
+use wgpu::{
+    BindGroupLayoutEntry, BindingType, SamplerBindingType, ShaderStages, TextureSampleType,
+    TextureViewDimension,
+};
+
 use crate::{RenderConfig, core::GpuContext};
 
 pub(crate) struct RenderPipeline {
@@ -17,11 +22,35 @@ impl RenderPipeline {
                 source: wgpu::ShaderSource::Wgsl(config.shader_text.as_str().into()),
             });
 
+        let bind_group_layout =
+            gpu.device
+                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                    label: Some("Render Bind Group Layout"),
+                    entries: &[
+                        BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: ShaderStages::FRAGMENT,
+                            ty: BindingType::Texture {
+                                sample_type: TextureSampleType::Float { filterable: true },
+                                view_dimension: TextureViewDimension::D2,
+                                multisampled: false,
+                            },
+                            count: None,
+                        },
+                        BindGroupLayoutEntry {
+                            binding: 1,
+                            visibility: ShaderStages::FRAGMENT,
+                            ty: BindingType::Sampler(SamplerBindingType::Filtering),
+                            count: None,
+                        },
+                    ],
+                });
+
         let render_pipeline_layout =
             gpu.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: Some("Render Pipeline Layout"),
-                    bind_group_layouts: &[],
+                    bind_group_layouts: &[Some(&bind_group_layout)],
                     immediate_size: 0,
                 });
 
@@ -50,7 +79,7 @@ impl RenderPipeline {
                     topology: wgpu::PrimitiveTopology::TriangleList,
                     strip_index_format: None,
                     front_face: wgpu::FrontFace::Ccw,
-                    cull_mode: Some(wgpu::Face::Back),
+                    cull_mode: None,
                     polygon_mode: wgpu::PolygonMode::Fill,
                     unclipped_depth: false,
                     conservative: false,
@@ -66,5 +95,29 @@ impl RenderPipeline {
             });
 
         Ok(RenderPipeline { render_pipeline })
+    }
+
+    pub fn create_bind_group(
+        &self,
+        gpu: &GpuContext,
+        view: &wgpu::TextureView,
+        sampler: &wgpu::Sampler,
+    ) -> wgpu::BindGroup {
+        let layout = self.render_pipeline.get_bind_group_layout(0);
+
+        gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Render Bind Group"),
+            layout: &layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(sampler),
+                },
+            ],
+        })
     }
 }

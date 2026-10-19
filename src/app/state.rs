@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use wgpu::{TextureDescriptor, TextureUsages};
 use winit::window::Window;
 
 use crate::{
@@ -8,11 +9,56 @@ use crate::{
     pipeline::{ComputePipeline, RenderPipeline},
 };
 
-pub struct State {
+pub(crate) struct State {
     gpu: GpuContext,
     render_window: RenderWindow,
     compute_pipeline: ComputePipeline,
     render_pipeline: RenderPipeline,
+    sampler: wgpu::Sampler,
+    target_resources: TargetResources,
+}
+
+pub(crate) struct TargetResources {
+    pub(crate) texture: wgpu::Texture,
+    pub(crate) compute_bind_group: wgpu::BindGroup,
+    pub(crate) render_bind_group: wgpu::BindGroup,
+}
+
+impl TargetResources {
+    pub(crate) fn new(
+        gpu: &GpuContext,
+        compute_pipeline: &ComputePipeline,
+        render_pipeline: &RenderPipeline,
+        sampler: &wgpu::Sampler,
+        width: u32,
+        height: u32,
+    ) -> Self {
+        let texture = gpu.device.create_texture(&TextureDescriptor {
+            label: Some("Target texture"),
+            size: wgpu::Extent3d {
+                width: width.max(1),
+                height: height.max(1),
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: TextureUsages::STORAGE_BINDING | TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let compute_bind_group = compute_pipeline.create_bind_group(gpu, &view);
+        let render_bind_group = render_pipeline.create_bind_group(gpu, &view, sampler);
+
+        Self {
+            texture,
+            compute_bind_group,
+            render_bind_group,
+        }
+    }
 }
 
 impl State {
@@ -40,11 +86,32 @@ impl State {
         let render_pipeline =
             RenderPipeline::new(&gpu, render_window.surface_config(), render_config)?;
 
+        let sampler = gpu.device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("Blit Sampler"),
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            ..Default::default()
+        });
+
+        let surface_config = render_window.surface_config();
+        let target_resources = TargetResources::new(
+            &gpu,
+            &compute_pipeline,
+            &render_pipeline,
+            &sampler,
+            surface_config.width,
+            surface_config.height,
+        );
+
         Ok(Self {
             gpu,
             render_window,
             render_pipeline,
             compute_pipeline,
+            sampler,
+            target_resources,
         })
     }
 
@@ -71,7 +138,13 @@ impl State {
                 label: Some("Compute Pass"),
                 timestamp_writes: None,
             });
-            self.compute_pipeline.dispatch(&mut cpass, 64, 1, 1);
+            self.compute_pipeline.dispatch(
+                &mut cpass,
+                &self.target_resources.compute_bind_group,
+                16, // TODO: UNHARDCODE
+                16, // TODO: UNHARDCODE
+                1,  // TODO: UNHARDCODE
+            );
         }
 
         {
@@ -96,8 +169,8 @@ impl State {
                 timestamp_writes: None,
                 multiview_mask: None,
             });
-
             render_pass.set_pipeline(&self.render_pipeline.render_pipeline);
+            render_pass.set_bind_group(0, &self.target_resources.render_bind_group, &[]);
             render_pass.draw(0..3, 0..1);
         }
 
@@ -109,6 +182,17 @@ impl State {
 
     pub(crate) fn resize(&mut self, width: u32, height: u32) {
         self.render_window.resize(&self.gpu, width, height);
+
+        if width > 0 && height > 0 {
+            self.target_resources = TargetResources::new(
+                &self.gpu,
+                &self.compute_pipeline,
+                &self.render_pipeline,
+                &self.sampler,
+                width,
+                height,
+            );
+        }
     }
 
     pub(crate) fn window(&self) -> &Window {
