@@ -8,6 +8,7 @@ use wasm_bindgen::prelude::*;
 
 const DEFAULT_RENDER_SHADER: &'static str = include_str!("pipeline\\default_render.wgsl");
 const DEFAULT_COMPUTE_SHADER: &'static str = include_str!("pipeline\\default_compute.wgsl");
+const DEFAULT_COMPUTE_SPV: &'static [u8] = include_bytes!(env!("COMPUTE_SPV"));
 
 pub struct Builder {
     window: WindowConfig,
@@ -29,6 +30,7 @@ impl Default for Builder {
                 shader_text: DEFAULT_RENDER_SHADER.to_string(),
             },
             compute: ComputeConfig {
+                shader_bytes: DEFAULT_COMPUTE_SPV.to_vec(),
                 shader_text: DEFAULT_COMPUTE_SHADER.to_string(),
                 entry_point: "main".to_string(),
             },

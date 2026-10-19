@@ -1,6 +1,8 @@
+use std::borrow::Cow;
+
 use wgpu::{
-    BindGroupLayoutEntry, BindingType, ShaderStages, StorageTextureAccess, TextureFormat,
-    TextureViewDimension,
+    BindGroupLayoutEntry, BindingType, PassthroughShaderEntryPoint, ShaderStages,
+    StorageTextureAccess, TextureFormat, TextureViewDimension,
 };
 
 use crate::{ComputeConfig, core::GpuContext};
@@ -11,12 +13,20 @@ pub struct ComputePipeline {
 
 impl ComputePipeline {
     pub(crate) fn new(gpu: &GpuContext, config: &ComputeConfig) -> anyhow::Result<Self> {
-        let shader = gpu
-            .device
-            .create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some("Compute Shader"),
-                source: wgpu::ShaderSource::Wgsl(config.shader_text.as_str().into()),
-            });
+        let shader = unsafe {
+            gpu.device
+                .create_shader_module_passthrough(wgpu::ShaderModuleDescriptorPassthrough {
+                    label: Some("rust-gpu Compute Shader"),
+                    spirv: Some(wgpu::util::make_spirv_raw(&config.shader_bytes)),
+
+                    entry_points: Cow::Borrowed(&[PassthroughShaderEntryPoint {
+                        name: Cow::Borrowed(&config.entry_point),
+                        workgroup_size: (16, 16, 1),
+                    }]),
+
+                    ..Default::default()
+                })
+        };
 
         let bind_group_layout =
             gpu.device

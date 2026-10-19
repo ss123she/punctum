@@ -4,16 +4,19 @@ version = "0.1.0"
 edition = "2024"
 exclude = [
     ".cargo",
+    "default-shaders"
 ]
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 
 [dependencies]
 winit = "0.30"
 anyhow = "1.0"
 log = { version = "0.4", features = ["release_max_level_info"] }
-# wesl = "0.6"
+
+[build-dependencies]
+cargo-gpu-install = "0.11"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 wgpu = { version = "30", default-features = false, features = [
@@ -22,6 +25,7 @@ wgpu = { version = "30", default-features = false, features = [
     "metal",
     "vulkan",
     "std",
+    "spirv"
 ] }
 env_logger = "0.11"
 pollster = "1.0"

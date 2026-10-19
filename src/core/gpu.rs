@@ -18,10 +18,20 @@ impl GpuContext {
             })
             .await?;
 
+        let mut required_features = wgpu::Features::empty();
+        if adapter
+            .features()
+            .contains(wgpu::Features::PASSTHROUGH_SHADERS)
+        {
+            required_features |= wgpu::Features::PASSTHROUGH_SHADERS;
+        } else {
+            anyhow::bail!("Adapter does not support PASSTHROUGH_SHADERS!");
+        }
+
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: None,
-                required_features: wgpu::Features::empty(),
+                required_features,
                 experimental_features: wgpu::ExperimentalFeatures::disabled(),
                 required_limits: wgpu::Limits::default(),
                 memory_hints: Default::default(),

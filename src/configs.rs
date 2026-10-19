@@ -9,6 +9,7 @@ pub(crate) struct WindowConfig {
 }
 
 pub struct ComputeConfig {
+    pub shader_bytes: Vec<u8>,
     pub shader_text: String,
     pub entry_point: String,
 }
