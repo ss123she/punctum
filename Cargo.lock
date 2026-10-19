@@ -1729,8 +1729,21 @@ dependencies = [
  "env_logger",
  "log",
  "pollster",
+ "punctum-macros",
+ "quote",
+ "syn 3.0.9",
+ "walkdir",
  "wgpu",
  "winit",
+]
+
+[[package]]
+name = "punctum-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.9",
 ]
 
 [[package]]

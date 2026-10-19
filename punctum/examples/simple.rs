@@ -1,3 +1,8 @@
+use punctum::gpu_kernel;
+
+#[gpu_kernel]
+fn my_kernel() {}
+
 fn main() -> anyhow::Result<()> {
     punctum::builder()
         .with_title("Awesome Engine")
