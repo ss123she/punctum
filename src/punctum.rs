@@ -3,8 +3,8 @@ use winit::event_loop::EventLoop;
 
 use crate::{AppConfig, ComputeConfig, RenderConfig, WindowConfig, app::runner::Runner};
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
+// #[cfg(target_arch = "wasm32")]
+// use wasm_bindgen::prelude::*;
 
 const DEFAULT_RENDER_SHADER: &'static str = include_str!("pipeline\\default_render.wgsl");
 const DEFAULT_COMPUTE_SHADER: &'static str = include_str!("pipeline\\default_compute.wgsl");
@@ -78,13 +78,13 @@ impl Builder {
         #[cfg(not(target_arch = "wasm32"))]
         env_logger::init();
 
-        #[cfg(target_arch = "wasm32")]
-        {
-            use wasm_bindgen::UnwrapThrowExt;
-            use winit::platform::web::EventLoopExtWebSys;
-            console_error_panic_hook::set_once();
-            let _ = console_log::init_with_level(log::Level::Info);
-        }
+        // #[cfg(target_arch = "wasm32")]
+        // {
+        //     use wasm_bindgen::UnwrapThrowExt;
+        //     use winit::platform::web::EventLoopExtWebSys;
+        //     console_error_panic_hook::set_once();
+        //     let _ = console_log::init_with_level(log::Level::Info);
+        // }
 
         let event_loop = EventLoop::with_user_event().build()?;
 
@@ -94,26 +94,26 @@ impl Builder {
         #[cfg(not(target_arch = "wasm32"))]
         event_loop.run_app(&mut runner)?;
 
-        #[cfg(target_arch = "wasm32")]
-        {
-            use winit::platform::web::EventLoopExtWebSys;
-            event_loop.spawn_app(runner);
-        }
+        // #[cfg(target_arch = "wasm32")]
+        // {
+        //     use winit::platform::web::EventLoopExtWebSys;
+        //     event_loop.spawn_app(runner);
+        // }
 
         Ok(())
     }
 }
 
-#[cfg(target_arch = "wasm32")]
-#[wasm_bindgen]
-pub fn start(canvas_id: Option<String>) -> Result<(), wasm_bindgen::JsValue> {
-    use wasm_bindgen::UnwrapThrowExt;
-
-    let mut b = builder();
-    if let Some(id) = canvas_id {
-        b = b.with_canvas_id(id);
-    }
-    b.run().unwrap_throw();
-
-    Ok(())
-}
+// #[cfg(target_arch = "wasm32")]
+// #[wasm_bindgen]
+// pub fn start(canvas_id: Option<String>) -> Result<(), wasm_bindgen::JsValue> {
+//     use wasm_bindgen::UnwrapThrowExt;
+//
+//     let mut b = builder();
+//     if let Some(id) = canvas_id {
+//         b = b.with_canvas_id(id);
+//     }
+//     b.run().unwrap_throw();
+//
+//     Ok(())
+// }

@@ -14,11 +14,6 @@ crate-type = ["rlib"]
 winit = "0.30"
 anyhow = "1.0"
 log = { version = "0.4", features = ["release_max_level_info"] }
-
-[build-dependencies]
-cargo-gpu-install = "0.11"
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 wgpu = { version = "30", default-features = false, features = [
     "wgsl",
     "dx12",
@@ -30,25 +25,28 @@ wgpu = { version = "30", default-features = false, features = [
 env_logger = "0.11"
 pollster = "1.0"
 
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-wgpu = { version = "30", default-features = false, features = [
-    "wgsl",
-    "webgpu",
-    "std",
-] }
-console_error_panic_hook = "0.1"
-console_log = "1.1"
-wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = [
-    "Document",
-    "Window",
-    "Element",
-] }
+[build-dependencies]
+cargo-gpu-install = "0.11"
 
-[profile.release]
-opt-level = "z"
-lto = true
-codegen-units = 1
-panic = "abort"
-strip = true
+# [target.'cfg(target_arch = "wasm32")'.dependencies]
+# wgpu = { version = "30", default-features = false, features = [
+#     "wgsl",
+#     "webgpu",
+#     "std",
+# ] }
+# console_error_panic_hook = "0.1"
+# console_log = "1.1"
+# wasm-bindgen = "0.2"
+# wasm-bindgen-futures = "0.4"
+# web-sys = { version = "0.3", features = [
+#     "Document",
+#     "Window",
+#     "Element",
+# ] }
+#
+# [profile.release]
+# opt-level = "z"
+# lto = true
+# codegen-units = 1
+# panic = "abort"
+# strip = true
