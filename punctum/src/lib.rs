@@ -4,8 +4,9 @@ mod core;
 mod pipeline;
 mod punctum;
 
-pub use configs::*;
-pub use punctum::{Builder, builder};
-pub use wgpu;
+use configs::*;
 
+pub use configs::KernelDescriptor;
+pub use punctum::{Builder, builder};
 pub use punctum_macros::gpu_kernel;
+pub use wgpu;

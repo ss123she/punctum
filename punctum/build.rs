@@ -5,6 +5,10 @@ use quote::quote;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
+use syn::LitInt;
+use syn::Meta;
+use syn::Token;
+use syn::punctuated::Punctuated;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rerun-if-changed=src");
@@ -124,6 +128,7 @@ spirv-std = "0.11"
     let mut transformed_kernels = Vec::new();
     for func in kernels {
         let mut f = func.clone();
+        let (tx, ty, tz) = parse_kernel_threads(&f.attrs);
         f.attrs.retain(|attr| {
             !attr.path().is_ident("gpu_kernel")
                 && !attr
@@ -134,13 +139,17 @@ spirv-std = "0.11"
         });
 
         f.attrs
-            .push(syn::parse_quote!(#[spirv(compute(threads(1, 1, 1)))]));
+            .push(syn::parse_quote!(#[spirv(compute(threads(#tx, #ty, #tz)))]));
+
         transformed_kernels.push(f);
     }
 
     let lib_rs = quote! {
         #![no_std]
+        #![allow(unused_imports)]
         use spirv_std::spirv;
+        use spirv_std::glam::{self, UVec2, UVec3, Vec2, Vec4, vec2, vec4};
+        use spirv_std::image::StorageImage2d;
 
         #(#transformed_kernels)*
     };
@@ -162,4 +171,32 @@ fn compile_shader_crate(crate_path: &PathBuf) -> Result<PathBuf, Box<dyn std::er
         .build()?;
 
     Ok(spv_result.module.unwrap_single().to_path_buf())
+}
+
+fn parse_kernel_threads(attrs: &[syn::Attribute]) -> (u32, u32, u32) {
+    for attr in attrs {
+        let is_gpu = attr.path().is_ident("gpu_kernel")
+            || attr
+                .path()
+                .segments
+                .last()
+                .is_some_and(|s| s.ident == "gpu_kernel");
+
+        if is_gpu {
+            if let Meta::List(list) = &attr.meta {
+                let parser = Punctuated::<LitInt, Token![,]>::parse_terminated;
+                if let Ok(args) = list.parse_args_with(parser) {
+                    let mut dims = [1u32; 3];
+                    for (i, arg) in args.iter().enumerate().take(3) {
+                        if let Ok(v) = arg.base10_parse() {
+                            dims[i] = v;
+                        }
+                    }
+                    return (dims[0], dims[1], dims[2]);
+                }
+            }
+            return (16, 16, 1);
+        }
+    }
+    (16, 16, 1)
 }
