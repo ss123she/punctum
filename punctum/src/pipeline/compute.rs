@@ -21,7 +21,11 @@ impl ComputePipeline {
 
                     entry_points: Cow::Borrowed(&[PassthroughShaderEntryPoint {
                         name: Cow::Borrowed(&config.entry_point),
-                        workgroup_size: (16, 16, 1),
+                        workgroup_size: (
+                            config.workgroup_size[0],
+                            config.workgroup_size[1],
+                            config.workgroup_size[2],
+                        ),
                     }]),
 
                     ..Default::default()

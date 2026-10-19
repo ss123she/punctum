@@ -11,6 +11,8 @@ pub(crate) struct WindowConfig {
 pub(crate) struct ComputeConfig {
     pub(crate) shader_bytes: Vec<u8>,
     pub(crate) entry_point: String,
+    pub(crate) workgroup_size: [u32; 3],
+    pub(crate) kernels: Vec<KernelDescriptor>,
 }
 
 #[derive(Debug, Clone)]

@@ -34,13 +34,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             shadow_crate_dir.display()
         );
 
-        let spv_path = compile_shader_crate(&shadow_crate_dir)?;
+        match compile_shader_crate(&shadow_crate_dir) {
+            Ok(spv_path) => {
+                println!("cargo:rustc-env=COMPUTE_SPV={}", spv_path.display());
+            }
+            Err(e) => {
+                println!("cargo:warning=Error in shader code: {}", e);
 
-        println!(
-            "cargo:warn=Shader compilation successful: {}",
-            spv_path.display()
-        );
-        println!("cargo:rustc-env=COMPUTE_SPV={}", spv_path.display());
+                let dummy_spv = get_workspace_target_dir().join("dummy.spv");
+                let _ = std::fs::write(&dummy_spv, &[0u8; 4]);
+                println!("cargo:rustc-env=COMPUTE_SPV={}", dummy_spv.display());
+            }
+        }
     }
 
     Ok(())

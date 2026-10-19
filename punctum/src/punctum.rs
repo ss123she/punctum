@@ -1,7 +1,9 @@
 use wgpu::PresentMode;
 use winit::event_loop::EventLoop;
 
-use crate::{AppConfig, ComputeConfig, RenderConfig, WindowConfig, app::runner::Runner};
+use crate::{
+    AppConfig, ComputeConfig, KernelDescriptor, RenderConfig, WindowConfig, app::runner::Runner,
+};
 
 // #[cfg(target_arch = "wasm32")]
 // use wasm_bindgen::prelude::*;
@@ -30,7 +32,9 @@ impl Default for Builder {
             },
             compute: ComputeConfig {
                 shader_bytes: DEFAULT_COMPUTE_SPV.to_vec(),
-                entry_point: "gradient".to_string(),
+                entry_point: "main".to_string(),
+                workgroup_size: [16, 16, 1],
+                kernels: Vec::new(),
             },
         }
     }
@@ -52,13 +56,41 @@ impl Builder {
         self
     }
 
+    pub fn with_canvas_id(mut self, id: impl Into<String>) -> Self {
+        self.window.canvas_id = Some(id.into());
+        self
+    }
+
+    pub fn with_vsync(mut self, vsync: bool) -> Self {
+        self.render.present_mode = if vsync {
+            PresentMode::AutoVsync
+        } else {
+            PresentMode::AutoNoVsync
+        };
+        self
+    }
+
     pub fn with_present_mode(mut self, present_mode: PresentMode) -> Self {
         self.render.present_mode = present_mode;
         self
     }
 
-    pub fn with_canvas_id(mut self, id: impl Into<String>) -> Self {
-        self.window.canvas_id = Some(id.into());
+    pub fn with_kernel(mut self, kernel: KernelDescriptor) -> Self {
+        self.compute.entry_point = kernel.entry_point.to_string();
+        self.compute.workgroup_size = kernel.workgroup_size;
+        self.compute.kernels.push(kernel);
+        self
+    }
+
+    pub fn with_custom_compute(
+        mut self,
+        bytes: Vec<u8>,
+        entry_point: impl Into<String>,
+        workgroup_size: [u32; 3],
+    ) -> Self {
+        self.compute.shader_bytes = bytes;
+        self.compute.entry_point = entry_point.into();
+        self.compute.workgroup_size = workgroup_size;
         self
     }
 

@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{ItemFn, LitInt, Token, parse_macro_input, punctuated::Punctuated};
+use syn::{FnArg, ItemFn, LitInt, Token, parse_macro_input, punctuated::Punctuated};
 
 #[proc_macro_attribute]
 pub fn gpu_kernel(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -11,12 +11,27 @@ pub fn gpu_kernel(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let (tx, ty, tz) = parse_threads(attr);
 
+    let mut typecheck_fn = input_fn.clone();
+
+    for input in &mut typecheck_fn.sig.inputs {
+        if let FnArg::Typed(pat_type) = input {
+            pat_type.attrs.retain(|a| !a.path().is_ident("spirv"));
+        }
+    }
+    typecheck_fn.attrs.retain(|a| !a.path().is_ident("spirv"));
+
     let expanded = quote! {
         #[allow(non_upper_case_globals)]
         #vis const #fn_name: ::punctum::KernelDescriptor = ::punctum::KernelDescriptor {
             name: #fn_name_str,
             entry_point: #fn_name_str,
             workgroup_size: [#tx, #ty, #tz],
+        };
+
+        #[doc(hidden)]
+        #[allow(dead_code, unused_variables, unused_mut, non_snake_case)]
+        const _: () = {
+            #typecheck_fn
         };
     };
 
