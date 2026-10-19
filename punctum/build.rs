@@ -22,28 +22,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if !found_kernels.is_empty() {
-        let shadow_crate_dir = PathBuf::from(get_workspace_target_dir().join("punctum_shaders"));
+        let shadow_crate_dir = get_workspace_target_dir().join("punctum_shaders");
         generate_shadow_crate(&shadow_crate_dir, &found_kernels)?;
 
         println!(
             "cargo:warning=Shadow crate successfully generated in: {}",
             shadow_crate_dir.display()
-        )
+        );
+
+        let spv_path = compile_shader_crate(&shadow_crate_dir)?;
+
+        println!(
+            "cargo:warn=Shader compilation successful: {}",
+            spv_path.display()
+        );
+        println!("cargo:rustc-env=COMPUTE_SPV={}", spv_path.display());
     }
-
-    let shader_crate = PathBuf::from("../default-shaders");
-    let backend = Install::from_shader_crate(shader_crate.clone()).run()?;
-    let mut builder = backend.to_spirv_builder(shader_crate, "spirv-unknown-vulkan1.2");
-    builder.build_script.defaults = true;
-    builder.spirv_metadata = SpirvMetadata::Full;
-
-    let spv_result = builder
-        .capability(Capability::ImageQuery)
-        .capability(Capability::StorageImageWriteWithoutFormat)
-        .build()?;
-    let path_to_spv = spv_result.module.unwrap_single();
-
-    println!("cargo:rustc-env=COMPUTE_SPV={}", path_to_spv.display());
 
     Ok(())
 }
@@ -83,6 +77,27 @@ fn scan_directory(
     Ok(())
 }
 
+fn get_workspace_target_dir() -> PathBuf {
+    if let Ok(target) = std::env::var("CARGO_TARGET_DIR") {
+        return PathBuf::from(target);
+    }
+
+    if let Ok(out_dir) = std::env::var("OUT_DIR") {
+        let out_path = PathBuf::from(out_dir);
+
+        if let Some(target_dir) = out_path
+            .parent()
+            .and_then(|p| p.parent())
+            .and_then(|p| p.parent())
+            .and_then(|p| p.parent())
+            .and_then(|p| p.parent())
+        {
+            return target_dir.to_path_buf();
+        }
+    }
+    PathBuf::from("target")
+}
+
 fn generate_shadow_crate(
     dir: &Path,
     kernels: &[syn::ItemFn],
@@ -102,6 +117,7 @@ crate-type = ["lib"]
 [dependencies]
 spirv-std = "0.11"
 
+[workspace]
 "#;
     fs::write(dir.join("Cargo.toml"), cargo_toml)?;
 
@@ -134,23 +150,16 @@ spirv-std = "0.11"
     Ok(())
 }
 
-fn get_workspace_target_dir() -> PathBuf {
-    if let Ok(target) = std::env::var("CARGO_TARGET_DIR") {
-        return PathBuf::from(target);
-    }
+fn compile_shader_crate(crate_path: &PathBuf) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let backend = Install::from_shader_crate(crate_path.clone()).run()?;
+    let mut builder = backend.to_spirv_builder(crate_path, "spirv-unknown-vulkan1.2");
+    builder.build_script.defaults = true;
+    builder.spirv_metadata = SpirvMetadata::Full;
 
-    if let Ok(out_dir) = std::env::var("OUT_DIR") {
-        let out_path = PathBuf::from(out_dir);
+    let spv_result = builder
+        .capability(Capability::ImageQuery)
+        .capability(Capability::StorageImageWriteWithoutFormat)
+        .build()?;
 
-        if let Some(target_dir) = out_path
-            .parent()
-            .and_then(|p| p.parent())
-            .and_then(|p| p.parent())
-            .and_then(|p| p.parent())
-            .and_then(|p| p.parent())
-        {
-            return target_dir.to_path_buf();
-        }
-    }
-    PathBuf::from("target")
+    Ok(spv_result.module.unwrap_single().to_path_buf())
 }
