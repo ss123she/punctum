@@ -3,6 +3,9 @@ use std::sync::Arc;
 use wgpu::{TextureDescriptor, TextureUsages};
 use winit::window::Window;
 
+const WORKGROUP_SIZE_X: u32 = 16;
+const WORKGROUP_SIZE_Y: u32 = 16;
+
 use crate::{
     ComputeConfig, RenderConfig,
     core::{GpuContext, RenderWindow},
@@ -138,12 +141,19 @@ impl State {
                 label: Some("Compute Pass"),
                 timestamp_writes: None,
             });
+
+            let width = self.target_resources.texture.width();
+            let height = self.target_resources.texture.height();
+
+            let dispatch_x = width.div_ceil(WORKGROUP_SIZE_X);
+            let dispatch_y = height.div_ceil(WORKGROUP_SIZE_Y);
+
             self.compute_pipeline.dispatch(
                 &mut cpass,
                 &self.target_resources.compute_bind_group,
-                16, // TODO: UNHARDCODE
-                16, // TODO: UNHARDCODE
-                1,  // TODO: UNHARDCODE
+                dispatch_x,
+                dispatch_y,
+                1,
             );
         }
 
