@@ -1,3 +1,6 @@
+mod common;
+
+use common::{MID_GRAY, half_size, scaled, tint_channel};
 use punctum::gpu_kernel;
 
 #[gpu_kernel(16, 16, 1)]
@@ -13,7 +16,14 @@ pub fn gradient(
             coords.x as f32 / dims.x as f32,
             coords.y as f32 / dims.y as f32,
         );
-        let color = spirv_std::glam::vec4(uv.x, uv.y, 0.5, 1.0);
+        let scaled_uv = scaled(uv, 1.0);
+        let center = half_size(spirv_std::glam::vec2(dims.x as f32, dims.y as f32));
+        let color = spirv_std::glam::vec4(
+            tint_channel(scaled_uv.x),
+            tint_channel(scaled_uv.y),
+            MID_GRAY + center.x / (dims.x as f32 * 2.0),
+            1.0,
+        );
 
         unsafe {
             output.write(coords, color);
