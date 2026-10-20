@@ -75,6 +75,11 @@ impl Builder {
         self
     }
 
+    pub fn with_spv(mut self, bytes: impl Into<Vec<u8>>) -> Self {
+        self.compute.shader_bytes = bytes.into();
+        self
+    }
+
     pub fn with_kernel(mut self, kernel: KernelDescriptor) -> Self {
         self.compute.entry_point = kernel.entry_point.to_string();
         self.compute.workgroup_size = kernel.workgroup_size;

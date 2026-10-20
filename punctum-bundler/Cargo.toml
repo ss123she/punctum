@@ -1,0 +1,14 @@
+[package]
+name = "punctum-bundler"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+cargo-gpu-install = "0.11"
+walkdir = "2"
+syn = { version = "3", features = ["visit", "visit-mut"] }
+quote = "1"
+proc-macro2 = "1"

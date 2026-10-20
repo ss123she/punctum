@@ -1734,19 +1734,26 @@ name = "punctum"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "cargo-gpu-install",
  "env_logger",
  "glam",
  "log",
  "pollster",
- "proc-macro2",
+ "punctum-bundler",
  "punctum-macros",
- "quote",
  "spirv-std",
- "syn 3.0.9",
- "walkdir",
  "wgpu",
  "winit",
+]
+
+[[package]]
+name = "punctum-bundler"
+version = "0.1.0"
+dependencies = [
+ "cargo-gpu-install",
+ "proc-macro2",
+ "quote",
+ "syn 3.0.9",
+ "walkdir",
 ]
 
 [[package]]
@@ -2077,6 +2084,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf41e0cfaf7226dca15e8197172c295a782857fcb97fad1808a166870dee75a3"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "shader-app"
+version = "0.1.0"
+dependencies = [
+ "glam",
+ "punctum",
+ "punctum-bundler",
+ "spirv-std",
 ]
 
 [[package]]

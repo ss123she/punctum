@@ -75,6 +75,7 @@ pub(crate) fn resolve_all(
     source: &CrateSource,
     kernel_indices: &[usize],
     direct_deps: &HashSet<String>,
+    skip_roots: &[String],
 ) -> Resolved {
     let index = build_name_index(source);
     let mut items: BTreeSet<usize> = kernel_indices.iter().copied().collect();
@@ -114,12 +115,12 @@ pub(crate) fn resolve_all(
             if impls.contains(&i) {
                 continue;
             }
-            if let Some(type_name) = impl_self_type_name(&imp.item)
-                && let Some(matches) = index.get(&type_name)
-                && matches.len() == 1
-                && items.contains(&matches[0])
-            {
-                changed |= impls.insert(i);
+            if let Some(type_name) = impl_self_type_name(&imp.item) {
+                if let Some(matches) = index.get(&type_name) {
+                    if matches.len() == 1 && items.contains(&matches[0]) {
+                        changed |= impls.insert(i);
+                    }
+                }
             }
         }
 
@@ -130,6 +131,7 @@ pub(crate) fn resolve_all(
             &impls,
             &referenced,
             direct_deps,
+            skip_roots,
             &mut warnings,
         );
         for name in &uses.extra_seeds {

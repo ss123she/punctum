@@ -80,6 +80,7 @@ pub(crate) fn process_uses(
     impls: &BTreeSet<usize>,
     referenced: &BTreeSet<String>,
     direct_deps: &HashSet<String>,
+    skip_roots: &[String],
     warnings: &mut BTreeSet<String>,
 ) -> UsePass {
     let mut lines: BTreeSet<String> = BTreeSet::new();
@@ -146,7 +147,7 @@ pub(crate) fn process_uses(
             warnings.insert(format!(
                 "shader import in {file} goes through module '{root}' declared in multiple files; it cannot be flattened"
             ));
-        } else if root == "std" || root == "punctum_macros" {
+        } else if root == "std" || skip_roots.iter().any(|s| s == &root) {
         } else {
             let leaves = use_leaves(&use_item.tree, None);
             let root_referenced = !root.is_empty() && referenced.contains(&root);
@@ -171,7 +172,7 @@ pub(crate) fn process_uses(
                 lines.insert(source_path);
 
                 if !root.is_empty() {
-                    if root != "spirv_std" {
+                    if root != "spirv_std" && !skip_roots.iter().any(|s| s == &root) {
                         extern_crates.insert(root);
                     }
                 } else {
@@ -197,6 +198,12 @@ pub(crate) fn process_uses(
             || name == "spirv_std"
             || RESERVED_ROOTS.contains(&name.as_str())
         {
+            continue;
+        }
+        if skip_roots.iter().any(|s| s == name) {
+            warnings.insert(format!(
+                "shader code references host crate '{name}'; it cannot be dragged into the shadow crate"
+            ));
             continue;
         }
         if direct_deps.contains(name) {

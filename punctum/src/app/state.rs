@@ -3,11 +3,8 @@ use std::sync::Arc;
 use wgpu::{TextureDescriptor, TextureUsages};
 use winit::window::Window;
 
-const WORKGROUP_SIZE_X: u32 = 16;
-const WORKGROUP_SIZE_Y: u32 = 16;
-
 use crate::{
-    ComputeConfig, RenderConfig,
+    configs::{ComputeConfig, RenderConfig},
     core::{GpuContext, RenderWindow},
     pipeline::{ComputePipeline, RenderPipeline},
 };
@@ -19,6 +16,7 @@ pub(crate) struct State {
     render_pipeline: RenderPipeline,
     sampler: wgpu::Sampler,
     target_resources: TargetResources,
+    workgroup_size: [u32; 3],
 }
 
 pub(crate) struct TargetResources {
@@ -115,6 +113,7 @@ impl State {
             compute_pipeline,
             sampler,
             target_resources,
+            workgroup_size: compute_config.workgroup_size,
         })
     }
 
@@ -145,8 +144,8 @@ impl State {
             let width = self.target_resources.texture.width();
             let height = self.target_resources.texture.height();
 
-            let dispatch_x = width.div_ceil(WORKGROUP_SIZE_X);
-            let dispatch_y = height.div_ceil(WORKGROUP_SIZE_Y);
+            let dispatch_x = width.div_ceil(self.workgroup_size[0]);
+            let dispatch_y = height.div_ceil(self.workgroup_size[1]);
 
             self.compute_pipeline.dispatch(
                 &mut cpass,

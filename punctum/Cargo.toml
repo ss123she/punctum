@@ -25,11 +25,7 @@ spirv-std = "0.11"
 glam = { version = "0.34", default-features = false }
 
 [build-dependencies]
-cargo-gpu-install = "0.11"
-walkdir = "2"
-syn = { version = "3", features = ["visit", "visit-mut"] }
-quote = "1"
-proc-macro2 = "1"
+punctum-bundler = { path = "../punctum-bundler" }
 # [target.'cfg(target_arch = "wasm32")'.dependencies]
 # wgpu = { version = "30", default-features = false, features = [
 #     "wgsl",
