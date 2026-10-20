@@ -1,0 +1,12 @@
+[package]
+name = "shader-app"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+punctum = { path = "../punctum" }
+spirv-std = "0.11"
+glam = { version = "0.34", default-features = false }
+
+[build-dependencies]
+punctum-bundler = { path = "../punctum-bundler" }
