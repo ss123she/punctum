@@ -76,14 +76,14 @@ pub(crate) fn load_lock_versions() -> HashMap<String, String> {
                 in_package = trimmed == "[[package]]";
                 current = None;
             } else if in_package {
-                if let Some(rest) = trimmed.strip_prefix("name = ") {
-                    if current.is_none() {
-                        current = Some(unquote(rest));
-                    }
-                } else if let Some(rest) = trimmed.strip_prefix("version = ") {
-                    if let Some(name) = current.take() {
-                        versions.entry(name).or_insert_with(|| unquote(rest));
-                    }
+                if let Some(rest) = trimmed.strip_prefix("name = ")
+                    && current.is_none()
+                {
+                    current = Some(unquote(rest));
+                } else if let Some(rest) = trimmed.strip_prefix("version = ")
+                    && let Some(name) = current.take()
+                {
+                    versions.entry(name).or_insert_with(|| unquote(rest));
                 }
             }
         }
@@ -106,11 +106,12 @@ pub(crate) fn load_direct_dependencies() -> HashSet<String> {
         let trimmed = line.trim();
         if trimmed.starts_with('[') && trimmed.ends_with(']') {
             in_dependencies = trimmed == "[dependencies]";
-            if let Some(rest) = trimmed.strip_prefix("[dependencies.") {
-                if let Some(name) = rest.strip_suffix(']') {
-                    deps.insert(unquote(name).replace('-', "_"));
-                }
+            if let Some(rest) = trimmed.strip_prefix("[dependencies.")
+                && let Some(name) = rest.strip_suffix(']')
+            {
+                deps.insert(unquote(name).replace('-', "_"));
             }
+
             continue;
         }
         if !in_dependencies || trimmed.starts_with('#') {
