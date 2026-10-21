@@ -9,7 +9,10 @@ pub fn gpu_kernel(attr: TokenStream, item: TokenStream) -> TokenStream {
     let fn_name_str = fn_name.to_string();
     let vis = &input_fn.vis;
 
-    let (tx, ty, tz) = parse_threads(attr);
+    let (tx, ty, tz) = match parse_threads(attr) {
+        Ok(threads) => threads,
+        Err(err) => return err.to_compile_error().into(),
+    };
 
     let mut typecheck_fn = input_fn.clone();
 
@@ -38,23 +41,23 @@ pub fn gpu_kernel(attr: TokenStream, item: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-fn parse_threads(attr: TokenStream) -> (u32, u32, u32) {
+fn parse_threads(attr: TokenStream) -> syn::Result<(u32, u32, u32)> {
     if attr.is_empty() {
-        return (1, 1, 1);
+        return Ok((1, 1, 1));
     }
 
-    let syn_args =
-        syn::parse::Parser::parse(Punctuated::<LitInt, Token![,]>::parse_terminated, attr);
+    let args = syn::parse::Parser::parse(Punctuated::<LitInt, Token![,]>::parse_terminated, attr)?;
 
-    if let Ok(args) = syn_args {
-        let mut dims = [1u32; 3];
-        for (i, arg) in args.iter().enumerate() {
-            if let Ok(v) = arg.base10_parse() {
-                dims[i] = v;
-            }
+    let mut dims = [1u32; 3];
+    for (i, arg) in args.iter().enumerate() {
+        if i >= 3 {
+            return Err(syn::Error::new(
+                arg.span(),
+                "expected at most 3 workgroup dimensions",
+            ));
         }
-        (dims[0], dims[1], dims[2])
-    } else {
-        (1, 1, 1)
+        dims[i] = arg.base10_parse()?;
     }
+
+    Ok((dims[0], dims[1], dims[2]))
 }

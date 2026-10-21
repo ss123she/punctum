@@ -8,7 +8,7 @@ use crate::{
 // #[cfg(target_arch = "wasm32")]
 // use wasm_bindgen::prelude::*;
 
-const DEFAULT_RENDER_SHADER: &'_ str = include_str!("pipeline\\default_render.wgsl");
+const DEFAULT_RENDER_SHADER: &'_ str = include_str!("pipeline/default_render.wgsl");
 const DEFAULT_COMPUTE_SPV: &'_ [u8] = include_bytes!(env!("COMPUTE_SPV"));
 
 pub struct Builder {

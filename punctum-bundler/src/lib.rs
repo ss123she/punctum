@@ -91,7 +91,12 @@ pub fn run(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
 
     match compile_shader_crate(&shadow_crate_dir) {
         Ok(spv_path) => {
-            let _ = fs::copy(&spv_path, &cached_spv);
+            if let Err(e) = fs::copy(&spv_path, &cached_spv) {
+                println!(
+                    "cargo:warning=Failed to cache SPV at {}: {e}",
+                    cached_spv.display()
+                );
+            }
             println!("cargo:rustc-env={}={}", config.env_var, spv_path.display());
         }
         Err(e) => {
