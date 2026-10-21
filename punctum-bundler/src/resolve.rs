@@ -115,12 +115,12 @@ pub(crate) fn resolve_all(
             if impls.contains(&i) {
                 continue;
             }
-            if let Some(type_name) = impl_self_type_name(&imp.item) {
-                if let Some(matches) = index.get(&type_name) {
-                    if matches.len() == 1 && items.contains(&matches[0]) {
-                        changed |= impls.insert(i);
-                    }
-                }
+            if let Some(type_name) = impl_self_type_name(&imp.item)
+                && let Some(matches) = index.get(&type_name)
+                && matches.len() == 1
+                && items.contains(&matches[0])
+            {
+                changed |= impls.insert(i);
             }
         }
 
@@ -135,10 +135,10 @@ pub(crate) fn resolve_all(
             &mut warnings,
         );
         for name in &uses.extra_seeds {
-            if let Some(matches) = index.get(name) {
-                if matches.len() == 1 {
-                    changed |= items.insert(matches[0]);
-                }
+            if let Some(matches) = index.get(name)
+                && matches.len() == 1
+            {
+                changed |= items.insert(matches[0]);
             }
         }
 
