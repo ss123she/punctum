@@ -14,6 +14,8 @@ pub fn tint(
     if coords.x < dims.x && coords.y < dims.y {
         let pos = glam::vec2(coords.x as f32, coords.y as f32);
         let uv = scale_uv(pos, glam::vec2(dims.x as f32, dims.y as f32));
+        let hyp = math::spirv_hypot(uv.x, uv.y);
+        math::fence();
         let color = glam::vec4(
             uv.x,
             uv.y,
@@ -22,7 +24,8 @@ pub fn tint(
                     w: dims.x as f32,
                     h: dims.y as f32,
                 }
-                .aspect(),
+                .aspect()
+                * hyp,
             1.0,
         );
 

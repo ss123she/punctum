@@ -1,6 +1,15 @@
 use glam::Vec2;
+use spirv_std::glam::Vec3;
 
 pub const GRID_TINT: f32 = 0.35;
+
+pub fn spirv_hypot(a: f32, b: f32) -> f32 {
+    Vec3::new(a, b, 0.0).length()
+}
+
+pub fn fence() {
+    spirv_std::arch::workgroup_memory_barrier()
+}
 
 const UV_SCALE: f32 = 1.0;
 

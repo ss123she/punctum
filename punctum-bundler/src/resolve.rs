@@ -6,13 +6,15 @@ use crate::uses::process_uses;
 
 struct PathIdents<'a> {
     pkg_root: &'a str,
+    modules: &'a HashMap<String, usize>,
     idents: BTreeSet<String>,
 }
 
 impl<'a> PathIdents<'a> {
-    fn new(pkg_root: &'a str) -> Self {
+    fn new(source: &'a CrateSource) -> Self {
         Self {
-            pkg_root,
+            pkg_root: &source.pkg_root,
+            modules: &source.modules,
             idents: BTreeSet::new(),
         }
     }
@@ -24,7 +26,12 @@ impl Visit<'_> for PathIdents<'_> {
     fn visit_path(&mut self, path: &syn::Path) {
         if !path.segments.is_empty() {
             let first = path.segments[0].ident.to_string();
-            if first == "crate" || first == "self" || first == "super" || first == self.pkg_root {
+            let is_own_root = first == "crate"
+                || first == "self"
+                || first == "super"
+                || first == self.pkg_root
+                || self.modules.get(&first).copied() == Some(1);
+            if is_own_root {
                 if let Some(last) = path.segments.last() {
                     self.idents.insert(last.ident.to_string());
                 }
@@ -87,12 +94,12 @@ pub(crate) fn resolve_all(
 
         let mut referenced: BTreeSet<String> = BTreeSet::new();
         for &i in &items {
-            let mut visitor = PathIdents::new(&source.pkg_root);
+            let mut visitor = PathIdents::new(source);
             visitor.visit_item(&source.items[i].item);
             referenced.extend(visitor.idents);
         }
         for &i in &impls {
-            let mut visitor = PathIdents::new(&source.pkg_root);
+            let mut visitor = PathIdents::new(source);
             visitor.visit_item_impl(&source.impls[i].item);
             referenced.extend(visitor.idents);
         }
