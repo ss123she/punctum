@@ -100,10 +100,21 @@ pub fn run(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
             println!("cargo:rustc-env={}={}", config.env_var, spv_path.display());
         }
         Err(e) => {
+            let _ = fs::remove_file(&cached_spv);
             println!("cargo:warning=Error in shader code: {e}");
 
             let pkg = std::env::var("CARGO_PKG_NAME").unwrap_or_default();
-            let dummy_spv = get_workspace_target_dir().join(format!("dummy_{pkg}.spv"));
+            let target = get_workspace_target_dir();
+
+            let err_file = target.join(format!("punctum_error_{pkg}.txt"));
+            let _ = fs::write(&err_file, e.to_string());
+            println!(
+                "cargo:rustc-env={}_ERROR={}",
+                config.env_var,
+                err_file.display()
+            );
+
+            let dummy_spv = target.join(format!("dummy_{pkg}.spv"));
             let _ = fs::write(&dummy_spv, [0u8; 4]);
             println!("cargo:rustc-env={}={}", config.env_var, dummy_spv.display());
         }

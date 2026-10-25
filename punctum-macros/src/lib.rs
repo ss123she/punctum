@@ -75,6 +75,21 @@ pub fn gpu_kernel(attr: TokenStream, item: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
+#[proc_macro]
+pub fn include_spv(_: TokenStream) -> TokenStream {
+    if let Ok(path) = std::env::var("PUNCTUM_SPV_ERROR") {
+        let text = std::fs::read_to_string(&path)
+            .unwrap_or_else(|_| "unknown error (see build output)".to_string());
+        let msg = format!("shader compilation failed:\n{text}");
+        return quote! {{
+            compile_error!(#msg);
+            &[] as &[u8]
+        }}
+        .into();
+    }
+    quote!(include_bytes!(env!("PUNCTUM_SPV"))).into()
+}
+
 fn parse_threads(attr: TokenStream) -> syn::Result<(u32, u32, u32)> {
     if attr.is_empty() {
         return Ok((1, 1, 1));
