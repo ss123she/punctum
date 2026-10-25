@@ -5,7 +5,7 @@ use wgpu::{
     StorageTextureAccess, TextureFormat, TextureViewDimension,
 };
 
-use crate::{ComputeConfig, core::GpuContext};
+use crate::{ComputeConfig, KernelResourceType, core::GpuContext};
 
 pub struct ComputePipeline {
     pub(crate) compute_pipeline: wgpu::ComputePipeline,
@@ -32,20 +32,71 @@ impl ComputePipeline {
                 })
         };
 
+        let active_kernel = config
+            .kernels
+            .iter()
+            .find(|k| k.entry_point == config.entry_point);
+
+        let entries: Vec<BindGroupLayoutEntry> = match active_kernel {
+            Some(kernel) => kernel
+                .bindings
+                .iter()
+                .map(|b| BindGroupLayoutEntry {
+                    binding: b.binding,
+                    visibility: ShaderStages::COMPUTE,
+                    ty: match b.resource_type {
+                        KernelResourceType::StorageTexture { write } => {
+                            BindingType::StorageTexture {
+                                access: if write {
+                                    StorageTextureAccess::WriteOnly
+                                } else {
+                                    StorageTextureAccess::ReadOnly
+                                },
+                                format: TextureFormat::Rgba8Unorm,
+                                view_dimension: TextureViewDimension::D2,
+                            }
+                        }
+                        KernelResourceType::SampledTexture => BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        KernelResourceType::Sampler => {
+                            BindingType::Sampler(wgpu::SamplerBindingType::Filtering)
+                        }
+                        KernelResourceType::UniformBuffer => BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        KernelResourceType::StorageBuffer { read_only } => BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                    },
+                    count: None,
+                })
+                .collect(),
+            None => {
+                vec![BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: ShaderStages::COMPUTE,
+                    ty: BindingType::StorageTexture {
+                        access: StorageTextureAccess::WriteOnly,
+                        format: TextureFormat::Rgba8Unorm,
+                        view_dimension: TextureViewDimension::D2,
+                    },
+                    count: None,
+                }]
+            }
+        };
+
         let bind_group_layout =
             gpu.device
                 .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                     label: Some("Compute Bind Group Layout"),
-                    entries: &[BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: ShaderStages::COMPUTE,
-                        ty: BindingType::StorageTexture {
-                            access: StorageTextureAccess::WriteOnly,
-                            format: TextureFormat::Rgba8Unorm,
-                            view_dimension: TextureViewDimension::D2,
-                        },
-                        count: None,
-                    }],
+                    entries: &entries,
                 });
 
         let pipeline_layout = gpu

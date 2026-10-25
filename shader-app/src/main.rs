@@ -2,11 +2,13 @@ mod math;
 
 use math::{Extents, GRID_TINT, scale_uv};
 use punctum::gpu_kernel;
+use spirv_std::image::StorageImage2d;
 
 #[gpu_kernel(8, 8, 1)]
 pub fn tint(
     #[spirv(global_invocation_id)] id: glam::UVec3,
-    #[spirv(descriptor_set = 0, binding = 0)] output: &spirv_std::image::StorageImage2d,
+    #[spirv(descriptor_set = 0, binding = 0)] output: &StorageImage2d,
+    #[spirv(descriptor_set = 0, binding = 1)] input: &StorageImage2d,
 ) {
     let coords = id.truncate();
     let dims: glam::UVec2 = output.query_size();

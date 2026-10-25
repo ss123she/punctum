@@ -2,7 +2,8 @@ use wgpu::PresentMode;
 use winit::event_loop::EventLoop;
 
 use crate::{
-    AppConfig, ComputeConfig, KernelDescriptor, RenderConfig, WindowConfig, app::runner::Runner,
+    AppConfig, ComputeConfig, KernelDescriptor, RenderConfig, UserBinding, UserResource,
+    WindowConfig, app::runner::Runner,
 };
 
 // #[cfg(target_arch = "wasm32")]
@@ -35,6 +36,7 @@ impl Default for Builder {
                 entry_point: "main".to_string(),
                 workgroup_size: [16, 16, 1],
                 kernels: Vec::new(),
+                user_bindings: Vec::new(),
             },
         }
     }
@@ -96,6 +98,33 @@ impl Builder {
         self.compute.shader_bytes = bytes;
         self.compute.entry_point = entry_point.into();
         self.compute.workgroup_size = workgroup_size;
+        self
+    }
+
+    pub fn with_buffer(mut self, binding: u32, buffer: wgpu::Buffer) -> Self {
+        self.compute.user_bindings.retain(|b| b.binding != binding);
+        self.compute.user_bindings.push(UserBinding {
+            binding,
+            resource: UserResource::Buffer(buffer),
+        });
+        self
+    }
+
+    pub fn with_texture(mut self, binding: u32, view: wgpu::TextureView) -> Self {
+        self.compute.user_bindings.retain(|b| b.binding != binding);
+        self.compute.user_bindings.push(UserBinding {
+            binding,
+            resource: UserResource::Texture(view),
+        });
+        self
+    }
+
+    pub fn with_sampler(mut self, binding: u32, sampler: wgpu::Sampler) -> Self {
+        self.compute.user_bindings.retain(|b| b.binding != binding);
+        self.compute.user_bindings.push(UserBinding {
+            binding,
+            resource: UserResource::Sampler(sampler),
+        });
         self
     }
 
