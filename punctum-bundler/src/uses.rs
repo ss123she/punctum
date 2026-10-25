@@ -162,14 +162,11 @@ pub(crate) fn process_uses(
                 });
 
             if keep {
-                let source_path = use_item.to_token_stream().to_string();
-                for leaf in &leaves {
-                    let bound = leaf.rename.clone().unwrap_or_else(|| leaf.name.clone());
-                    if !bound.is_empty() && bound != "*" && bound != "self" {
-                        track_bound(&mut bound_names, &bound, &source_path, file, warnings);
-                    }
+                let mut expanded = Vec::new();
+                expand_use_tree(&use_item.tree, "", &mut expanded);
+                for path in expanded {
+                    lines.insert(path);
                 }
-                lines.insert(source_path);
 
                 if !root.is_empty() {
                     if root != "spirv_std" && !skip_roots.iter().any(|s| s == &root) {
@@ -215,6 +212,49 @@ pub(crate) fn process_uses(
         lines,
         extern_crates,
         extra_seeds,
+    }
+}
+
+fn expand_use_tree(tree: &syn::UseTree, prefix: &str, out: &mut Vec<String>) {
+    match tree {
+        syn::UseTree::Path(p) => {
+            let next_prefix = if prefix.is_empty() {
+                p.ident.to_string()
+            } else {
+                format!("{}::{}", prefix, p.ident)
+            };
+            expand_use_tree(&p.tree, &next_prefix, out);
+        }
+        syn::UseTree::Name(n) => {
+            if n.ident == "self" {
+                out.push(format!("use {};", prefix));
+            } else if prefix.is_empty() {
+                out.push(format!("use {};", n.ident));
+            } else {
+                out.push(format!("use {}::{};", prefix, n.ident));
+            }
+        }
+        syn::UseTree::Rename(r) => {
+            if r.ident == "self" {
+                out.push(format!("use {} as {};", prefix, r.rename));
+            } else if prefix.is_empty() {
+                out.push(format!("use {} as {};", r.ident, r.rename));
+            } else {
+                out.push(format!("use {}::{} as {};", prefix, r.ident, r.rename));
+            }
+        }
+        syn::UseTree::Glob(_) => {
+            if prefix.is_empty() {
+                out.push("use *;".to_string());
+            } else {
+                out.push(format!("use {}::*; ", prefix));
+            }
+        }
+        syn::UseTree::Group(g) => {
+            for item in &g.items {
+                expand_use_tree(item, prefix, out);
+            }
+        }
     }
 }
 

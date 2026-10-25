@@ -23,7 +23,7 @@ pollster = "1.0"
 punctum-macros = {path = "../punctum-macros"}
 spirv-std = "0.11"
 glam = { version = "0.34", default-features = false }
-
+bytemuck = { version = "1.25.2", features = ["derive"] }
 [build-dependencies]
 punctum-bundler = { path = "../punctum-bundler" }
 # [target.'cfg(target_arch = "wasm32")'.dependencies]

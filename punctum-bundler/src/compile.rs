@@ -29,7 +29,7 @@ pub(crate) fn compile_shader_crate(
     crate_path: &PathBuf,
 ) -> Result<PathBuf, Box<dyn std::error::Error>> {
     let backend = Install::from_shader_crate(crate_path.clone()).run()?;
-    let mut builder = backend.to_spirv_builder(crate_path, "spirv-unknown-vulkan1.2");
+    let mut builder = backend.to_spirv_builder(crate_path, "spirv-unknown-vulkan1.1");
     builder.build_script.defaults = true;
     builder.spirv_metadata = SpirvMetadata::Full;
 

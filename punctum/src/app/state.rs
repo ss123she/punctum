@@ -1,23 +1,17 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
-use wgpu::{TextureDescriptor, TextureUsages};
+use wgpu::{
+    BufferUsages, TextureDescriptor, TextureUsages,
+    util::{BufferInitDescriptor, DeviceExt},
+};
 use winit::window::Window;
 
 use crate::{
-    configs::{ComputeConfig, RenderConfig},
+    UpdateContext,
+    configs::{AppConfig, ComputeConfig, RenderConfig, UpdateFn, UserBinding, UserResource},
     core::{GpuContext, RenderWindow},
     pipeline::{ComputePipeline, RenderPipeline},
 };
-
-pub(crate) struct State {
-    gpu: GpuContext,
-    render_window: RenderWindow,
-    compute_pipeline: ComputePipeline,
-    render_pipeline: RenderPipeline,
-    sampler: wgpu::Sampler,
-    target_resources: TargetResources,
-    workgroup_size: [u32; 3],
-}
 
 pub(crate) struct TargetResources {
     pub(crate) texture: wgpu::Texture,
@@ -31,6 +25,7 @@ impl TargetResources {
         compute_pipeline: &ComputePipeline,
         render_pipeline: &RenderPipeline,
         sampler: &wgpu::Sampler,
+        user_bindings: &[UserBinding],
         width: u32,
         height: u32,
     ) -> Self {
@@ -51,7 +46,7 @@ impl TargetResources {
 
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-        let compute_bind_group = compute_pipeline.create_bind_group(gpu, &view);
+        let compute_bind_group = compute_pipeline.create_bind_group(gpu, &view, user_bindings);
         let render_bind_group = render_pipeline.create_bind_group(gpu, &view, sampler);
 
         Self {
@@ -62,17 +57,25 @@ impl TargetResources {
     }
 }
 
+pub(crate) struct State {
+    gpu: GpuContext,
+    render_window: RenderWindow,
+    compute_pipeline: ComputePipeline,
+    render_pipeline: RenderPipeline,
+    sampler: wgpu::Sampler,
+    target_resources: TargetResources,
+    workgroup_size: [u32; 3],
+    user_bindings: Vec<UserBinding>,
+    on_update: Option<UpdateFn>,
+    start_time: Instant,
+    last_frame_time: Instant,
+}
+
 impl State {
-    pub(crate) async fn new(
-        window: Arc<Window>,
-        compute_config: &ComputeConfig,
-        render_config: &RenderConfig,
-    ) -> anyhow::Result<Self> {
+    pub(crate) async fn new(window: Arc<Window>, mut config: AppConfig) -> anyhow::Result<Self> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             #[cfg(not(target_arch = "wasm32"))]
             backends: wgpu::Backends::PRIMARY,
-            // #[cfg(target_arch = "wasm32")]
-            // backends: wgpu::Backends::BROWSER_WEBGPU,
             flags: Default::default(),
             memory_budget_thresholds: Default::default(),
             backend_options: Default::default(),
@@ -81,11 +84,26 @@ impl State {
 
         let surface = instance.create_surface(window.clone()).unwrap();
         let gpu = GpuContext::new(&instance, Some(&surface)).await?;
-        let render_window = RenderWindow::new(window, &gpu, surface, render_config)?;
+        let render_window = RenderWindow::new(window, &gpu, surface, &config.render)?;
 
-        let compute_pipeline = ComputePipeline::new(&gpu, compute_config)?;
+        for pending in config.compute.pending_uniforms.drain(..) {
+            let buffer = gpu.device.create_buffer_init(&BufferInitDescriptor {
+                label: Some(&format!("Uniform Buffer (binding {})", pending.binding)),
+                contents: &pending.data,
+                usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+            });
+
+            config.compute.user_bindings.push(UserBinding {
+                binding: pending.binding,
+                resource: UserResource::Buffer(buffer),
+            });
+        }
+
+        let compute_pipeline = ComputePipeline::new(&gpu, &config.compute)?;
         let render_pipeline =
-            RenderPipeline::new(&gpu, render_window.surface_config(), render_config)?;
+            RenderPipeline::new(&gpu, render_window.surface_config(), &config.render)?;
+
+        let user_bindings = std::mem::take(&mut config.compute.user_bindings);
 
         let sampler = gpu.device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("Blit Sampler"),
@@ -102,9 +120,12 @@ impl State {
             &compute_pipeline,
             &render_pipeline,
             &sampler,
+            &user_bindings,
             surface_config.width,
             surface_config.height,
         );
+
+        let now = Instant::now();
 
         Ok(Self {
             gpu,
@@ -113,11 +134,31 @@ impl State {
             compute_pipeline,
             sampler,
             target_resources,
-            workgroup_size: compute_config.workgroup_size,
+            workgroup_size: config.compute.workgroup_size,
+            user_bindings,
+            on_update: config.on_update,
+            start_time: now,
+            last_frame_time: now,
         })
     }
 
-    pub(crate) fn update(&mut self) {}
+    pub(crate) fn update(&mut self) {
+        let now = Instant::now();
+        let delta_time = (now - self.last_frame_time).as_secs_f32();
+        let total_time = (now - self.start_time).as_secs_f32();
+        self.last_frame_time = now;
+
+        if let Some(on_update) = &mut self.on_update {
+            let ctx = UpdateContext {
+                device: &self.gpu.device,
+                queue: &self.gpu.queue,
+                delta_time,
+                total_time,
+                user_bindings: &self.user_bindings,
+            };
+            on_update(&ctx);
+        }
+    }
 
     pub(crate) fn render(&mut self) -> anyhow::Result<()> {
         let Some(output) = self.render_window.get_current_texture(&self.gpu)? else {
@@ -198,6 +239,7 @@ impl State {
                 &self.compute_pipeline,
                 &self.render_pipeline,
                 &self.sampler,
+                &self.user_bindings,
                 width,
                 height,
             );

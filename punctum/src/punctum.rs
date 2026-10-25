@@ -2,8 +2,8 @@ use wgpu::PresentMode;
 use winit::event_loop::EventLoop;
 
 use crate::{
-    AppConfig, ComputeConfig, KernelDescriptor, RenderConfig, UserBinding, UserResource,
-    WindowConfig, app::runner::Runner,
+    AppConfig, ComputeConfig, KernelDescriptor, RenderConfig, UpdateContext, UserBinding,
+    UserResource, WindowConfig, app::runner::Runner, configs::UpdateFn,
 };
 
 // #[cfg(target_arch = "wasm32")]
@@ -16,6 +16,7 @@ pub struct Builder {
     window: WindowConfig,
     render: RenderConfig,
     compute: ComputeConfig,
+    on_update: Option<UpdateFn>,
 }
 
 impl Default for Builder {
@@ -37,7 +38,9 @@ impl Default for Builder {
                 workgroup_size: [16, 16, 1],
                 kernels: Vec::new(),
                 user_bindings: Vec::new(),
+                pending_uniforms: Vec::new(),
             },
+            on_update: None,
         }
     }
 }
@@ -128,11 +131,36 @@ impl Builder {
         self
     }
 
+    pub fn with_uniform<T: Copy + 'static>(mut self, binding: u32, initial_value: &T) -> Self {
+        let bytes = unsafe {
+            std::slice::from_raw_parts(
+                initial_value as *const T as *const u8,
+                std::mem::size_of::<T>(),
+            )
+        };
+        self.compute
+            .pending_uniforms
+            .push(crate::configs::PendingUniform {
+                binding,
+                data: bytes.to_vec(),
+            });
+        self
+    }
+
+    pub fn on_update<F>(mut self, f: F) -> Self
+    where
+        F: FnMut(&UpdateContext) + 'static,
+    {
+        self.on_update = Some(Box::new(f));
+        self
+    }
+
     fn build(self) -> AppConfig {
         AppConfig {
             window: self.window,
             render: self.render,
             compute: self.compute,
+            on_update: self.on_update,
         }
     }
 

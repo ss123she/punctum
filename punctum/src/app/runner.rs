@@ -42,7 +42,7 @@ impl ApplicationHandler<State> for Runner {
 
         #[allow(unused_mut)]
         let mut window_attributes = Window::default_attributes()
-            .with_title(config.window.title)
+            .with_title(&config.window.title)
             .with_inner_size(PhysicalSize::new(config.window.width, config.window.height));
 
         //         #[cfg(target_arch = "wasm32")]
@@ -76,9 +76,7 @@ impl ApplicationHandler<State> for Runner {
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            self.state = Some(
-                pollster::block_on(State::new(window, &config.compute, &config.render)).unwrap(),
-            );
+            self.state = Some(pollster::block_on(State::new(window, config)).unwrap());
         }
 
         // #[cfg(target_arch = "wasm32")]

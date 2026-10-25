@@ -1,11 +1,15 @@
 use std::borrow::Cow;
 
 use wgpu::{
-    BindGroupLayoutEntry, BindingType, PassthroughShaderEntryPoint, ShaderStages,
+    BindGroupEntry, BindGroupLayoutEntry, BindingType, PassthroughShaderEntryPoint, ShaderStages,
     StorageTextureAccess, TextureFormat, TextureViewDimension,
 };
 
-use crate::{ComputeConfig, KernelResourceType, core::GpuContext};
+use crate::{
+    ComputeConfig, KernelResourceType,
+    configs::{UserBinding, UserResource},
+    core::GpuContext,
+};
 
 pub struct ComputePipeline {
     pub(crate) compute_pipeline: wgpu::ComputePipeline,
@@ -134,16 +138,35 @@ impl ComputePipeline {
         cpass.dispatch_workgroups(x, y, z);
     }
 
-    pub fn create_bind_group(&self, gpu: &GpuContext, view: &wgpu::TextureView) -> wgpu::BindGroup {
+    pub fn create_bind_group(
+        &self,
+        gpu: &GpuContext,
+        view: &wgpu::TextureView,
+        user_bindings: &[UserBinding],
+    ) -> wgpu::BindGroup {
         let layout = self.compute_pipeline.get_bind_group_layout(0);
+
+        let mut entries = vec![BindGroupEntry {
+            binding: 0,
+            resource: wgpu::BindingResource::TextureView(view),
+        }];
+
+        for ub in user_bindings {
+            let resource = match &ub.resource {
+                UserResource::Buffer(buf) => buf.as_entire_binding(),
+                UserResource::Texture(view) => wgpu::BindingResource::TextureView(view),
+                UserResource::Sampler(sampler) => wgpu::BindingResource::Sampler(sampler),
+            };
+            entries.push(BindGroupEntry {
+                binding: ub.binding,
+                resource,
+            })
+        }
 
         gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Compute Bind Group"),
             layout: &layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::TextureView(view),
-            }],
+            entries: &entries,
         })
     }
 }

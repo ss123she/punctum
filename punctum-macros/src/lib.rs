@@ -131,7 +131,6 @@ fn extract_binding_index(pat: &syn::PatType) -> Option<u32> {
 }
 
 fn classify_type(ty: &Type) -> proc_macro2::TokenStream {
-    println!("TY: {}", ty.to_token_stream());
     match ty {
         Type::Reference(TypeReference {
             mutability, elem, ..
