@@ -41,6 +41,12 @@ pub fn run(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
         println!("cargo:rerun-if-changed={dir}");
     }
 
+    let path_deps = load_path_dependencies();
+    for p in path_deps.values() {
+        println!("cargo:rerun-if-changed={p}/src");
+        println!("cargo:rerun-if-changed={p}/Cargo.toml");
+    }
+
     let mut files: Vec<(String, syn::File)> = Vec::new();
     for dir in &config.scan_dirs {
         scan_directory(dir, &mut files)?;
@@ -86,7 +92,11 @@ pub fn run(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     let lib_changed = write_if_changed(&shadow_crate_dir.join("src/lib.rs"), &lib_rs)?;
     let toml_changed = write_if_changed(&shadow_crate_dir.join("Cargo.toml"), &cargo_toml)?;
 
-    if !lib_changed && !toml_changed && cached_spv.exists() {
+    let uses_path_deps = resolved
+        .extern_crates
+        .iter()
+        .any(|c| path_deps.contains_key(&c.replace('_', "-")));
+    if !uses_path_deps && !lib_changed && !toml_changed && cached_spv.exists() {
         println!(
             "cargo:rustc-env={}={}",
             config.env_var,

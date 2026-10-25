@@ -8,7 +8,7 @@ use winit::window::Window;
 
 use crate::{
     UpdateContext,
-    configs::{AppConfig, ComputeConfig, RenderConfig, UpdateFn, UserBinding, UserResource},
+    configs::{AppConfig, UpdateFn, UserBinding, UserResource},
     core::{GpuContext, RenderWindow},
     pipeline::{ComputePipeline, RenderPipeline},
 };
@@ -69,6 +69,8 @@ pub(crate) struct State {
     on_update: Option<UpdateFn>,
     start_time: Instant,
     last_frame_time: Instant,
+    mouse_px: (f32, f32),
+    mouse_down: bool,
 }
 
 impl State {
@@ -139,6 +141,8 @@ impl State {
             on_update: config.on_update,
             start_time: now,
             last_frame_time: now,
+            mouse_px: (0.0, 0.0),
+            mouse_down: false,
         })
     }
 
@@ -148,6 +152,9 @@ impl State {
         let total_time = (now - self.start_time).as_secs_f32();
         self.last_frame_time = now;
 
+        let cfg = self.render_window.surface_config();
+        let (w, h) = (cfg.width.max(1) as f32, cfg.height.max(1) as f32);
+
         if let Some(on_update) = &mut self.on_update {
             let ctx = UpdateContext {
                 device: &self.gpu.device,
@@ -155,6 +162,8 @@ impl State {
                 delta_time,
                 total_time,
                 user_bindings: &self.user_bindings,
+                mouse: [self.mouse_px.0 / w, 1.0 - self.mouse_px.1 / h],
+                mouse_down: self.mouse_down,
             };
             on_update(&ctx);
         }
@@ -248,5 +257,13 @@ impl State {
 
     pub(crate) fn window(&self) -> &Window {
         self.render_window.window()
+    }
+
+    pub(crate) fn set_mouse(&mut self, x: f32, y: f32) {
+        self.mouse_px = (x, y);
+    }
+
+    pub(crate) fn set_mouse_down(&mut self, down: bool) {
+        self.mouse_down = down;
     }
 }

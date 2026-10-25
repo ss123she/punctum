@@ -35,6 +35,8 @@ pub struct UpdateContext<'a> {
     pub delta_time: f32,
     pub total_time: f32,
     pub(crate) user_bindings: &'a [UserBinding],
+    pub mouse: [f32; 2],
+    pub mouse_down: bool,
 }
 
 impl<'a> UpdateContext<'a> {

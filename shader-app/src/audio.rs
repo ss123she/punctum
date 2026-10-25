@@ -30,7 +30,7 @@ impl Audio {
         let host = cpal::default_host();
         let device = host
             .default_output_device()
-            .ok_or_else(|| anyhow::anyhow!("нет устройства вывода звука"))?;
+            .ok_or_else(|| anyhow::anyhow!("No device for audio output"))?;
         let config = device.default_output_config()?;
         let channels = config.channels() as usize;
         let sample_rate = config.sample_rate() as f32;
@@ -57,7 +57,7 @@ impl Audio {
                 |e| eprintln!("audio error: {e}"),
                 None,
             )?,
-            other => anyhow::bail!("формат сэмплов {other:?} пока не поддержан"),
+            other => anyhow::bail!("Format {other:?} not supported"),
         };
         stream.play()?;
 

@@ -1,156 +1,240 @@
-use core::f32;
-
 use glam::{Vec2, Vec3, Vec4};
+use spirv_std::num_traits::Float;
 
-pub const PI: f32 = f32::consts::PI;
+pub use core::f32::consts::{PI, TAU};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Default)]
 pub struct ShaderParams {
     pub time: f32,
     pub delta_time: f32,
-    pub width: f32,
-    pub height: f32,
     pub fps: f32,
     pub frame_ms: f32,
-    pub level: f32,
+    pub mouse_x: f32,
+    pub mouse_y: f32,
+    pub mouse_down: f32,
     pub _pad: f32,
 }
 
-pub struct CameraRay {
+pub trait Mix {
+    fn mix(self, to: Self, t: f32) -> Self;
+}
+impl Mix for f32 {
+    fn mix(self, b: f32, t: f32) -> f32 {
+        self + (b - self) * t
+    }
+}
+impl Mix for Vec2 {
+    fn mix(self, b: Vec2, t: f32) -> Vec2 {
+        self + (b - self) * t
+    }
+}
+impl Mix for Vec3 {
+    fn mix(self, b: Vec3, t: f32) -> Vec3 {
+        self + (b - self) * t
+    }
+}
+impl Mix for Vec4 {
+    fn mix(self, b: Vec4, t: f32) -> Vec4 {
+        self + (b - self) * t
+    }
+}
+
+pub fn saturate(x: f32) -> f32 {
+    x.clamp(0.0, 1.0)
+}
+
+pub fn fract(x: f32) -> f32 {
+    x - Float::floor(x)
+}
+
+pub fn step(edge: f32, x: f32) -> f32 {
+    if x < edge { 0.0 } else { 1.0 }
+}
+
+pub fn smoothstep(e0: f32, e1: f32, x: f32) -> f32 {
+    let t = saturate((x - e0) / (e1 - e0));
+    t * t * (3.0 - 2.0 * t)
+}
+
+pub fn remap(x: f32, a0: f32, a1: f32, b0: f32, b1: f32) -> f32 {
+    b0 + (x - a0) / (a1 - a0) * (b1 - b0)
+}
+
+pub fn rotate(p: Vec2, angle: f32) -> Vec2 {
+    let s = Float::sin(angle);
+    let c = Float::cos(angle);
+    Vec2::new(p.x * c - p.y * s, p.x * s + p.y * c)
+}
+
+#[derive(Copy, Clone)]
+pub struct Palette {
+    pub a: Vec3,
+    pub b: Vec3,
+    pub c: Vec3,
+    pub d: Vec3,
+}
+
+impl Palette {
+    pub const fn new(a: Vec3, b: Vec3, c: Vec3, d: Vec3) -> Self {
+        Self { a, b, c, d }
+    }
+
+    pub fn at(&self, t: f32) -> Vec3 {
+        let x = (self.c * t + self.d) * TAU;
+        self.a + self.b * Vec3::new(Float::cos(x.x), Float::cos(x.y), Float::cos(x.z))
+    }
+}
+
+pub const NEON: Palette = Palette::new(
+    Vec3::new(0.5, 0.5, 0.5),
+    Vec3::new(0.5, 0.5, 0.5),
+    Vec3::new(1.0, 1.0, 1.0),
+    Vec3::new(0.263, 0.416, 0.557),
+);
+
+pub struct Ray {
     pub origin: Vec3,
     pub dir: Vec3,
 }
 
-impl CameraRay {
-    pub fn create(uv: Vec2) -> Self {
-        let origin = Vec3::new(0.0, 0.0, -3.0);
-        let dir = Vec3::new(uv.x, uv.y, 1.0).normalize();
-        Self { origin, dir }
+pub struct Camera {
+    pub pos: Vec3,
+    pub target: Vec3,
+    pub fov: f32,
+}
+
+impl Camera {
+    pub fn new(pos: Vec3, target: Vec3) -> Self {
+        Self {
+            pos,
+            target,
+            fov: 1.0,
+        }
+    }
+
+    pub fn orbit(center: Vec3, radius: f32, angle: f32, height: f32) -> Self {
+        let pos = center
+            + Vec3::new(
+                Float::sin(angle) * radius,
+                height,
+                Float::cos(angle) * radius,
+            );
+        Self {
+            pos,
+            target: center,
+            fov: 1.0,
+        }
+    }
+
+    pub fn with_fov(mut self, fov: f32) -> Self {
+        self.fov = fov;
+        self
+    }
+
+    pub fn ray(&self, uv: Vec2) -> Ray {
+        let fwd = (self.target - self.pos).normalize();
+        let right = Vec3::Y.cross(fwd).normalize();
+        let up = fwd.cross(right);
+        let focal = 1.0 / Float::tan(self.fov * 0.5);
+        Ray {
+            origin: self.pos,
+            dir: (right * uv.x + up * uv.y + fwd * focal).normalize(),
+        }
     }
 }
 
-pub fn rotate_2d(p: Vec2, angle: f32) -> Vec2 {
-    let s = spirv_sin(angle);
-    let c = spirv_cos(angle);
-    Vec2::new(p.x * c - p.y * s, p.x * s + p.y * c)
+pub fn sd_sphere(p: Vec3, r: f32) -> f32 {
+    p.length() - r
 }
 
-pub fn spirv_sin(x: f32) -> f32 {
-    let mut v = x % (2.0 * PI);
-    if v > PI {
-        v -= 2.0 * PI;
-    }
-    if v < -PI {
-        v += 2.0 * PI;
-    }
-
-    if v > PI * 0.5 {
-        v = PI - v;
-    } else if v < -PI * 0.5 {
-        v = -PI - v;
-    }
-
-    let v2 = v * v;
-    v * (1.0 - v2 / 6.0 * (1.0 - v2 / 20.0 * (1.0 - v2 / 42.0)))
+pub fn sd_plane(p: Vec3, height: f32) -> f32 {
+    p.y - height
 }
 
-pub fn spirv_cos(x: f32) -> f32 {
-    spirv_sin(x + PI * 0.5)
+pub fn sd_box(p: Vec3, half: Vec3) -> f32 {
+    let q = p.abs() - half;
+    q.max(Vec3::ZERO).length() + q.x.max(q.y.max(q.z)).min(0.0)
 }
 
-pub fn sd_torus(p: Vec3, tx: f32, ty: f32) -> f32 {
-    let q = Vec2::new(Vec2::new(p.x, p.z).length() - tx, p.y);
-    q.length() - ty
+pub fn sd_torus(p: Vec3, major: f32, minor: f32) -> f32 {
+    let q = Vec2::new(Vec2::new(p.x, p.z).length() - major, p.y);
+    q.length() - minor
 }
 
-pub fn cosine_palette(t: f32) -> Vec4 {
-    let a = Vec3::new(0.5, 0.5, 0.5);
-    let b = Vec3::new(0.5, 0.5, 0.5);
-    let c = Vec3::new(1.0, 1.0, 1.0);
-    let d = Vec3::new(0.263, 0.416, 0.557);
+pub fn sd_capsule(p: Vec3, a: Vec3, b: Vec3, r: f32) -> f32 {
+    let pa = p - a;
+    let ba = b - a;
+    let h = saturate(pa.dot(ba) / ba.dot(ba));
+    (pa - ba * h).length() - r
+}
 
-    let color = a + b * Vec3::new(
-        spirv_cos(2.0 * PI * (c.x * t + d.x)),
-        spirv_cos(2.0 * PI * (c.y * t + d.y)),
-        spirv_cos(2.0 * PI * (c.z * t + d.z)),
-    );
+pub fn union(a: f32, b: f32) -> f32 {
+    a.min(b)
+}
 
-    Vec4::new(color.x, color.y, color.z, 1.0)
+pub fn intersect(a: f32, b: f32) -> f32 {
+    a.max(b)
+}
+
+pub fn subtract(a: f32, b: f32) -> f32 {
+    a.max(-b)
 }
 
 pub fn smin(a: f32, b: f32, k: f32) -> f32 {
-    let h = (0.5 + 0.5 * (b - a) / k).clamp(0.0, 1.0);
+    let h = saturate(0.5 + 0.5 * (b - a) / k);
     b * (1.0 - h) + a * h - k * h * (1.0 - h)
 }
 
-pub fn blob_pos(t: f32, i: f32) -> Vec3 {
-    let ph = i * 1.2566;
-    Vec3::new(
-        spirv_sin(t * 0.7 + ph * 2.0) * 1.3,
-        spirv_sin(t * 0.9 + ph * 3.0) * 0.8,
-        spirv_cos(t * 0.6 + ph) * 1.3,
-    )
+pub fn smax(a: f32, b: f32, k: f32) -> f32 {
+    -smin(-a, -b, k)
 }
 
-pub fn blob_positions(t: f32) -> [Vec3; 5] {
-    [
-        blob_pos(t, 0.0),
-        blob_pos(t, 1.0),
-        blob_pos(t, 2.0),
-        blob_pos(t, 3.0),
-        blob_pos(t, 4.0),
-    ]
-}
-
-pub fn blobs_sdf(p: Vec3, b: [Vec3; 5]) -> f32 {
-    let r = p.length();
-    if r > 4.0 {
-        return r - 2.55;
-    }
-    let mut d = (p - b[0]).length() - 0.55;
-    let mut i = 1;
-    while i < 5 {
-        let s = (p - b[i]).length() - 0.45;
-        d = smin(d, s, 0.6);
-        i += 1;
-    }
-    d
-}
-
-pub fn floor_sdf(p: Vec3) -> f32 {
-    p.y + 1.6
-}
-
-pub fn scene(p: Vec3, b: [Vec3; 5]) -> f32 {
-    blobs_sdf(p, b).min(floor_sdf(p))
-}
-
-pub fn calc_normal(p: Vec3, b: [Vec3; 5]) -> Vec3 {
+pub fn normal(p: Vec3, f: impl Fn(Vec3) -> f32) -> Vec3 {
     let e = 0.001;
     let k1 = Vec3::new(1.0, -1.0, -1.0);
     let k2 = Vec3::new(-1.0, -1.0, 1.0);
     let k3 = Vec3::new(-1.0, 1.0, -1.0);
     let k4 = Vec3::new(1.0, 1.0, 1.0);
-    (k1 * scene(p + k1 * e, b)
-        + k2 * scene(p + k2 * e, b)
-        + k3 * scene(p + k3 * e, b)
-        + k4 * scene(p + k4 * e, b))
-    .normalize()
+    (k1 * f(p + k1 * e) + k2 * f(p + k2 * e) + k3 * f(p + k3 * e) + k4 * f(p + k4 * e)).normalize()
 }
 
-pub fn sky(dir: Vec3, t: f32, light: Vec3) -> Vec3 {
-    let y = dir.y * 0.5 + 0.5;
-    let base = cosine_palette(y * 0.6 + t * 0.05).truncate() * (0.15 + y * 0.6);
-    let s = dir.dot(light).max(0.0);
-    let s2 = s * s;
-    let s4 = s2 * s2;
-    let s8 = s4 * s4;
-    base + Vec3::splat(s8 * s8 * 2.0)
+pub struct Hit {
+    pub t: f32,
+    pub hit: bool,
+    pub min_d: f32,
+    pub steps: u32,
 }
 
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Default)]
-pub struct Spectrum {
-    pub bands: [Vec4; 16],
+pub fn march(
+    ro: Vec3,
+    rd: Vec3,
+    t_max: f32,
+    max_steps: u32,
+    eps: f32,
+    f: impl Fn(Vec3) -> f32,
+) -> Hit {
+    let mut t = 0.0;
+    let mut min_d = f32::MAX;
+    let mut i = 0;
+    while i < max_steps && t < t_max {
+        let d = f(ro + rd * t);
+        min_d = min_d.min(d.abs());
+        if d < eps {
+            return Hit {
+                t,
+                hit: true,
+                min_d,
+                steps: i,
+            };
+        }
+        t += d;
+        i += 1;
+    }
+    Hit {
+        t,
+        hit: false,
+        min_d,
+        steps: i,
+    }
 }

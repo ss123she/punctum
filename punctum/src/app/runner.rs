@@ -147,6 +147,18 @@ impl ApplicationHandler<State> for Runner {
                 ..
             } => event_loop.exit(),
 
+            WindowEvent::CursorMoved { position, .. } => {
+                state.set_mouse(position.x as f32, position.y as f32);
+            }
+
+            WindowEvent::MouseInput {
+                state: btn,
+                button: MouseButton::Left,
+                ..
+            } => {
+                state.set_mouse_down(btn == ElementState::Pressed);
+            }
+
             _ => {}
         }
     }
