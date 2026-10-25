@@ -1927,6 +1927,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "punctum-common"
+version = "0.1.0"
+dependencies = [
+ "glam",
+ "punctum-bundler",
+ "spirv-std",
+]
+
+[[package]]
 name = "punctum-macros"
 version = "0.1.0"
 dependencies = [
@@ -2288,6 +2297,7 @@ dependencies = [
  "glam",
  "punctum",
  "punctum-bundler",
+ "punctum-common",
  "realfft",
  "spirv-std",
 ]

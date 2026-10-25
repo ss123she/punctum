@@ -131,9 +131,48 @@ pub(crate) fn load_direct_dependencies() -> HashSet<String> {
     deps
 }
 
+pub(crate) fn load_path_dependencies() -> HashMap<String, String> {
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_default();
+    let Ok(text) = fs::read_to_string(manifest_dir.join("Cargo.toml")) else {
+        return HashMap::new();
+    };
+
+    let mut out = HashMap::new();
+    let mut in_deps = false;
+    for line in text.lines() {
+        let t = line.trim();
+        if t.starts_with('[') {
+            in_deps = t == "[dependencies]";
+            continue;
+        }
+        if !in_deps || t.starts_with('#') {
+            continue;
+        }
+        let Some((key, rest)) = t.split_once('=') else {
+            continue;
+        };
+        let Some(p) = rest.split("path").nth(1) else {
+            continue;
+        };
+        let Some(path) = p.split('"').nth(1) else {
+            continue;
+        };
+
+        if let Ok(abs) = manifest_dir.join(path).canonicalize() {
+            let s = abs.to_string_lossy().replace('\\', "/");
+            let s = s.strip_prefix("//?/").unwrap_or(&s).to_string();
+            out.insert(key.trim().to_string(), s);
+        }
+    }
+    out
+}
+
 pub(crate) fn generate_cargo_toml(
     extern_crates: &BTreeSet<String>,
     lock_versions: &HashMap<String, String>,
+    path_deps: &HashMap<String, String>,
 ) -> (String, Vec<String>) {
     let mut warnings = Vec::new();
     let spirv_version = lock_versions
@@ -144,6 +183,12 @@ pub(crate) fn generate_cargo_toml(
     let mut deps = format!("spirv-std = \"{spirv_version}\"\n");
     for name in extern_crates {
         let package = name.replace('_', "-");
+        if let Some(path) = path_deps.get(&package) {
+            deps.push_str(&format!(
+                "{package} = {{ path = \"{path}\", default-features = false }}\n"
+            ));
+            continue;
+        }
         match lock_versions.get(&package) {
             Some(version) => deps.push_str(&format!(
                 "{name} = {{ version = \"{version}\", default-features = false }}\n"

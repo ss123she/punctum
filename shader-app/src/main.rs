@@ -1,14 +1,12 @@
 mod audio;
-mod canvas;
-mod math;
-mod text;
 
 use glam::{UVec2, UVec3, Vec2, Vec3, Vec4};
 use punctum::gpu_kernel;
 use spirv_std::image::StorageImage2d;
 
-use canvas::Canvas;
-use math::{ShaderParams, Spectrum, cosine_palette};
+use punctum_common::canvas::Canvas;
+use punctum_common::math::{ShaderParams, Spectrum, cosine_palette};
+use punctum_common::text;
 
 #[gpu_kernel(16, 16, 1)]
 pub fn visualizer(
@@ -113,7 +111,7 @@ fn main() -> anyhow::Result<()> {
     let mut spectrum = Spectrum::default();
     let mut audio = audio::Audio::new()?;
 
-    let spv: &[u8] = include_bytes!(env!("PUNCTUM_SPV"));
+    let spv: &[u8] = punctum::include_spv!();
 
     punctum::builder()
         .with_title("Punctum: Audio Visualizer")

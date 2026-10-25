@@ -15,6 +15,8 @@ use emit::{
 use resolve::resolve_all;
 use scan::{collect_source, scan_directory};
 
+use crate::emit::load_path_dependencies;
+
 pub struct Config {
     pub scan_dirs: Vec<String>,
     pub shadow_subdir: String,
@@ -72,7 +74,11 @@ pub fn run(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     let cached_spv = shadow_crate_dir.join("current_kernels.spv");
 
     let lib_rs = generate_lib_rs(&source, &resolved);
-    let (cargo_toml, toml_warnings) = generate_cargo_toml(&resolved.extern_crates, &lock_versions);
+    let (cargo_toml, toml_warnings) = generate_cargo_toml(
+        &resolved.extern_crates,
+        &lock_versions,
+        &load_path_dependencies(),
+    );
     for warning in &toml_warnings {
         println!("cargo:warning={warning}");
     }

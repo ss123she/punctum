@@ -1,0 +1,14 @@
+[package]
+name = "punctum-common"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+spirv-std = "0.11"
+glam = { version = "0.34", default-features = false }
+
+[build-dependencies]
+punctum-bundler = { path = "../punctum-bundler" }
