@@ -1,4 +1,3 @@
-use quote::ToTokens;
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 use crate::scan::{CrateSource, RESERVED_ROOTS, is_own_root};

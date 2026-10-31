@@ -39,7 +39,7 @@ impl Audio {
         let pushed = Arc::new(AtomicUsize::new(0));
 
         let (cb_samples, cb_pushed) = (samples.clone(), pushed.clone());
-        let stream_config: cpal::StreamConfig = config.clone().into();
+        let stream_config: cpal::StreamConfig = config.into();
 
         let stream = match config.sample_format() {
             cpal::SampleFormat::F32 => device.build_input_stream(

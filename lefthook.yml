@@ -6,10 +6,6 @@ pre-commit:
       glob: "**/*.rs"
       stage_fixed: true
 
-    - name: cargo check
-      run: cargo check --all-targets
-      glob: "**/*.rs"
-
     - name: cargo clippy
       run: cargo clippy --all-targets
       glob: "**/*.rs"

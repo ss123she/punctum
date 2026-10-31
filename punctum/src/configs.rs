@@ -1,4 +1,4 @@
-use wgpu::{PresentMode, StorageTextureAccess, TextureFormat};
+use wgpu::PresentMode;
 
 #[derive(Debug, Clone)]
 pub(crate) struct WindowConfig {
