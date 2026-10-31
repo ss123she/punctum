@@ -5,6 +5,7 @@ use syn::{
     punctuated::Punctuated,
 };
 
+/// Marks a function as a GPU compute kernel and generates its `KernelDescriptor` constant.
 #[proc_macro_attribute]
 pub fn gpu_kernel(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input_fn = parse_macro_input!(item as ItemFn);
@@ -75,6 +76,7 @@ pub fn gpu_kernel(attr: TokenStream, item: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
+/// Embeds the compiled SPIR-V bytes, or fails compilation with the shader error if one occurred.
 #[proc_macro]
 pub fn include_spv(_: TokenStream) -> TokenStream {
     if let Ok(path) = std::env::var("PUNCTUM_SPV_ERROR") {
