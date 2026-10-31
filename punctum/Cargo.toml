@@ -1,7 +1,7 @@
 [package]
 name = "punctum"
 description = "Minimal framework for writing and launching compute shaders in pure Rust (wgpu + rust-gpu)"
-version = "0.1.1"
+version = "0.1.1" # Later change to .workspace = true and all versions'll skip 0.1.1 . This hack needed to publish not corrupted readme to crates.io
 edition.workspace = true
 license.workspace = true
 readme.workspace = true
