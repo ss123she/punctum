@@ -1,3 +1,4 @@
+#![allow(clippy::manual_range_contains)]
 use glam::UVec2;
 
 const GLYPH_W: u32 = 3;
