@@ -15,10 +15,32 @@ A minimal framework for creating and launching compute shaders on pure Rust (bas
 * `punctum-common` - common library (math, sdf, audio, text, canvas).
 * `shader-app` - example of an app. Audio visualizer that captures system audio with `cpal`.
 
+## Quick Start
+
+1. **Add dependencies:**
+   ```bash
+   cargo add punctum
+   cargo add --build punctum-bundler
+   ```
+
+2. **Add `build.rs`:**
+   ```rust
+   fn main() -> Result<(), Box<dyn std::error::Error>> {
+       punctum_bundler::run(&punctum_bundler::Config::for_current_package())
+   }
+   ```
+
+3. **Paste the [Example](#example) into `src/main.rs` and run:**
+   ```bash
+   cargo run
+   ```
+
 ## Example
 
 ```rust
 use punctum::gpu_kernel;
+use punctum::spirv_std;
+use punctum::anyhow;
 
 #[gpu_kernel(16, 16, 1)]
 pub fn grad(
