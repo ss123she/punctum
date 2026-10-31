@@ -11,3 +11,9 @@ readme = "README.md"
 repository = "https://github.com/ss123she/punctum"
 keywords = ["gpu", "compute-shader", "wgpu", "rust-gpu", "spirv"]
 categories = ["rendering", "graphics", "game-development", "development-tools"]
+
+[workspace.dependencies]
+punctum = { version = "0.1.0", path = "punctum" }
+punctum-macros = { version = "0.1.0", path = "punctum-macros" }
+punctum-bundler = { version = "0.1.0", path = "punctum-bundler" }
+punctum-common = { version = "0.1.0", path = "punctum-common" }

@@ -2,15 +2,17 @@
 name = "shader-app"
 version = "0.1.0"
 edition = "2024"
+publish = false
 
 [dependencies]
+punctum.workspace = true
+punctum-common.workspace = true
+
 cpal = "0.18"
 realfft = "3.5"
 anyhow = "1"
-punctum = { path = "../punctum" }
-punctum-common = { path = "../punctum-common" }
 spirv-std = "0.11"
 glam = { version = "0.34", default-features = false }
 
 [build-dependencies]
-punctum-bundler = { path = "../punctum-bundler" }
+punctum-bundler.workspace = true
