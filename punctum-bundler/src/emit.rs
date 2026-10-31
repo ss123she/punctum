@@ -135,35 +135,47 @@ pub(crate) fn load_path_dependencies() -> HashMap<String, String> {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
         .map(PathBuf::from)
         .unwrap_or_default();
-    let Ok(text) = fs::read_to_string(manifest_dir.join("Cargo.toml")) else {
-        return HashMap::new();
-    };
+
+    let candidates = [
+        manifest_dir.join("Cargo.toml"),
+        manifest_dir.join("../Cargo.toml"),
+        manifest_dir.join("../../Cargo.toml"),
+    ];
 
     let mut out = HashMap::new();
-    let mut in_deps = false;
-    for line in text.lines() {
-        let t = line.trim();
-        if t.starts_with('[') {
-            in_deps = t == "[dependencies]";
-            continue;
-        }
-        if !in_deps || t.starts_with('#') {
-            continue;
-        }
-        let Some((key, rest)) = t.split_once('=') else {
+    for candidate in candidates {
+        let Ok(text) = fs::read_to_string(&candidate) else {
             continue;
         };
-        let Some(p) = rest.split("path").nth(1) else {
-            continue;
-        };
-        let Some(path) = p.split('"').nth(1) else {
-            continue;
-        };
+        let base_dir = candidate.parent().unwrap_or(&manifest_dir);
 
-        if let Ok(abs) = manifest_dir.join(path).canonicalize() {
-            let s = abs.to_string_lossy().replace('\\', "/");
-            let s = s.strip_prefix("//?/").unwrap_or(&s).to_string();
-            out.insert(key.trim().to_string(), s);
+        let mut in_deps = false;
+        for line in text.lines() {
+            let t = line.trim();
+            if t.starts_with('[') {
+                in_deps = t == "[dependencies]" || t == "[workspace.dependencies]";
+                continue;
+            }
+            if !in_deps || t.starts_with('#') {
+                continue;
+            }
+            let Some((key, rest)) = t.split_once('=') else {
+                continue;
+            };
+            let Some(p) = rest.split("path").nth(1) else {
+                continue;
+            };
+            let Some(path) = p.split('"').nth(1) else {
+                continue;
+            };
+
+            if let Ok(abs) = base_dir.join(path).canonicalize() {
+                let s = abs.to_string_lossy().replace('\\', "/");
+                let s = s.strip_prefix("//?/").unwrap_or(&s).to_string();
+                let clean_key = key.trim().replace('-', "_");
+                out.insert(clean_key, s.clone());
+                out.insert(key.trim().to_string(), s);
+            }
         }
     }
     out
