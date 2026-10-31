@@ -1905,7 +1905,6 @@ name = "punctum-common"
 version = "0.1.0"
 dependencies = [
  "glam",
- "punctum-bundler",
  "spirv-std",
 ]
 

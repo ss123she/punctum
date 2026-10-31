@@ -24,22 +24,22 @@ A minimal framework for creating and launching compute shaders on pure Rust (bas
 ## Quick Start
 
 1. **Add dependencies:**
-   ```bash
-   cargo add punctum
-   cargo add --build punctum-bundler
-   ```
+```bash
+cargo add punctum
+cargo add --build punctum-bundler
+```
 
 2. **Add `build.rs`:**
-   ```rust
-   fn main() -> Result<(), Box<dyn std::error::Error>> {
-       punctum_bundler::run(&punctum_bundler::Config::for_current_package())
-   }
-   ```
+```rust
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+   punctum_bundler::run(&punctum_bundler::Config::for_current_package())
+}
+```
 
 3. **Paste the [Example](#example) into `src/main.rs` and run:**
-   ```bash
-   cargo run
-   ```
+```bash
+cargo run
+```
 
 ## Example
 
