@@ -15,6 +15,6 @@ crate-type = ["rlib"]
 [dependencies]
 cargo-gpu-install = "0.11"
 walkdir = "2"
-syn = { version = "3", features = ["visit", "visit-mut"] }
+syn = { version = "3", features = ["full", "visit", "visit-mut"] }
 quote = "1"
 proc-macro2 = "1"
