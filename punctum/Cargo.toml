@@ -12,8 +12,6 @@ anyhow = "1.0"
 log = { version = "0.4", features = ["release_max_level_info"] }
 wgpu = { version = "30", default-features = false, features = [
     "wgsl",
-    "dx12",
-    "metal",
     "vulkan",
     "std",
     "spirv"

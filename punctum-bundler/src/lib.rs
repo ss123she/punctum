@@ -17,14 +17,20 @@ use scan::{collect_source, scan_directory};
 
 use crate::emit::load_path_dependencies;
 
+/// Settings controlling how kernels are discovered and compiled in a build script.
 pub struct Config {
+    /// Directories to scan for kernel source files.
     pub scan_dirs: Vec<String>,
+    /// Subdirectory under the target dir where the shadow crate is generated.
     pub shadow_subdir: String,
+    /// Name of the env var that receives the compiled SPIR-V path.
     pub env_var: String,
+    /// Crate roots to skip during dependency resolution.
     pub skip_roots: Vec<String>,
 }
 
 impl Config {
+    /// Builds a default config scoped to the package currently being built.
     pub fn for_current_package() -> Self {
         let pkg = std::env::var("CARGO_PKG_NAME").unwrap_or_else(|_| "app".to_string());
         Self {
@@ -36,6 +42,7 @@ impl Config {
     }
 }
 
+/// Scans for kernels, generates the shadow crate, compiles it, and exports the SPIR-V path.
 pub fn run(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     for dir in &config.scan_dirs {
         println!("cargo:rerun-if-changed={dir}");
