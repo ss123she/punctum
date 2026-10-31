@@ -9,6 +9,7 @@ use crate::{
 const DEFAULT_RENDER_SHADER: &'_ str = include_str!("pipeline/default_render.wgsl");
 const DEFAULT_COMPUTE_SPV: &'_ [u8] = include_bytes!(env!("COMPUTE_SPV"));
 
+/// Builder for configuring and launching a Punctum app.
 pub struct Builder {
     window: WindowConfig,
     render: RenderConfig,
@@ -17,6 +18,7 @@ pub struct Builder {
 }
 
 impl Default for Builder {
+    /// Creates a builder with a 1366x768 window, Fifo present mode, and the built-in shaders.
     fn default() -> Self {
         Self {
             window: WindowConfig {
@@ -42,27 +44,32 @@ impl Default for Builder {
     }
 }
 
+/// Creates a new [`Builder`] with default settings.
 pub fn builder() -> Builder {
     Builder::default()
 }
 
 impl Builder {
+    /// Sets the window title.
     pub fn with_title(mut self, title: impl Into<String>) -> Self {
         self.window.title = title.into();
         self
     }
 
+    /// Sets the initial window size in pixels.
     pub fn with_size(mut self, width: u32, height: u32) -> Self {
         self.window.width = width;
         self.window.height = height;
         self
     }
 
+    /// Sets the HTML canvas element id to render into (web targets).
     pub fn with_canvas_id(mut self, id: impl Into<String>) -> Self {
         self.window.canvas_id = Some(id.into());
         self
     }
 
+    /// Enables or disables vsync using the automatic present modes.
     pub fn with_vsync(mut self, vsync: bool) -> Self {
         self.render.present_mode = if vsync {
             PresentMode::AutoVsync
@@ -72,16 +79,19 @@ impl Builder {
         self
     }
 
+    /// Sets an explicit surface present mode.
     pub fn with_present_mode(mut self, present_mode: PresentMode) -> Self {
         self.render.present_mode = present_mode;
         self
     }
 
+    /// Replaces the compute shader with the given SPIR-V bytes.
     pub fn with_spv(mut self, bytes: impl Into<Vec<u8>>) -> Self {
         self.compute.shader_bytes = bytes.into();
         self
     }
 
+    /// Registers a kernel and makes it the active entry point and workgroup size.
     pub fn with_kernel(mut self, kernel: KernelDescriptor) -> Self {
         self.compute.entry_point = kernel.entry_point.to_string();
         self.compute.workgroup_size = kernel.workgroup_size;
@@ -89,6 +99,7 @@ impl Builder {
         self
     }
 
+    /// Uses a custom compute shader with the given entry point and workgroup size.
     pub fn with_custom_compute(
         mut self,
         bytes: Vec<u8>,
@@ -101,6 +112,7 @@ impl Builder {
         self
     }
 
+    /// Binds a user buffer at the given binding, replacing any existing one.
     pub fn with_buffer(mut self, binding: u32, buffer: wgpu::Buffer) -> Self {
         self.compute.user_bindings.retain(|b| b.binding != binding);
         self.compute.user_bindings.push(UserBinding {
@@ -110,6 +122,7 @@ impl Builder {
         self
     }
 
+    /// Binds a user texture view at the given binding, replacing any existing one.
     pub fn with_texture(mut self, binding: u32, view: wgpu::TextureView) -> Self {
         self.compute.user_bindings.retain(|b| b.binding != binding);
         self.compute.user_bindings.push(UserBinding {
@@ -119,6 +132,7 @@ impl Builder {
         self
     }
 
+    /// Binds a user sampler at the given binding, replacing any existing one.
     pub fn with_sampler(mut self, binding: u32, sampler: wgpu::Sampler) -> Self {
         self.compute.user_bindings.retain(|b| b.binding != binding);
         self.compute.user_bindings.push(UserBinding {
@@ -128,6 +142,7 @@ impl Builder {
         self
     }
 
+    /// Adds a uniform at the given binding, initialized from the raw bytes of `initial_value`.
     pub fn with_uniform<T: Copy + 'static>(mut self, binding: u32, initial_value: &T) -> Self {
         let bytes = unsafe {
             std::slice::from_raw_parts(
@@ -144,6 +159,7 @@ impl Builder {
         self
     }
 
+    /// Sets a callback invoked on every update tick.
     pub fn on_update<F>(mut self, f: F) -> Self
     where
         F: FnMut(&UpdateContext) + 'static,
@@ -152,6 +168,7 @@ impl Builder {
         self
     }
 
+    /// Consumes the builder and produces the final [`AppConfig`].
     fn build(self) -> AppConfig {
         AppConfig {
             window: self.window,
@@ -161,6 +178,7 @@ impl Builder {
         }
     }
 
+    /// Builds the config, creates the event loop, and runs the app.
     pub fn run(self) -> anyhow::Result<()> {
         let config = self.build();
 

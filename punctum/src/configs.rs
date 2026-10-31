@@ -9,7 +9,7 @@ pub(crate) struct WindowConfig {
 }
 
 #[derive(Clone)]
-pub struct PendingUniform {
+pub(crate) struct PendingUniform {
     pub binding: u32,
     pub data: Vec<u8>,
 }
