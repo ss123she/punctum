@@ -1,5 +1,11 @@
 # Punctum
 
+[![Crates.io](https://img.shields.io/crates/v/punctum.svg)](https://crates.io/crates/punctum)
+[![docs.rs](https://docs.rs/punctum/badge.svg)](https://docs.rs/punctum)
+[![Downloads](https://img.shields.io/crates/d/punctum.svg)](https://crates.io/crates/punctum)
+[![Rust](https://img.shields.io/badge/rust-1.85.0%2B-blue.svg?logo=rust)](https://www.rust-lang.org)
+[![License](https://img.shields.io/crates/l/punctum.svg)](#license)
+
 A minimal framework for creating and launching compute shaders on pure Rust (based on `wgpu` and `rust-gpu`). Allows to write GPU code right in Rust project.
 
 ## Benefits
