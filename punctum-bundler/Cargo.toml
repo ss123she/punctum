@@ -1,7 +1,13 @@
 [package]
 name = "punctum-bundler"
-version = "0.1.0"
-edition = "2024"
+description = "Build-script bundler for punctum: collects #[gpu_kernel] code into a shadow crate and compiles it to SPIR-V with rust-gpu"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [lib]
 crate-type = ["rlib"]

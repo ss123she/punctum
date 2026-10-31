@@ -2,3 +2,12 @@
 members = ["punctum", "punctum-macros", "punctum-bundler", "shader-app"]
 resolver = '2'
 exclude = ["default-shaders"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/ss123she/punctum"
+keywords = ["gpu", "compute-shader", "wgpu", "rust-gpu", "spirv"]
+categories = ["rendering", "graphics", "game-development", "development-tools"]

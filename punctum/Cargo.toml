@@ -1,7 +1,13 @@
 [package]
 name = "punctum"
-version = "0.1.0"
-edition = "2024"
+description = "Minimal framework for writing and launching compute shaders in pure Rust (wgpu + rust-gpu)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [lib]
 crate-type = ["rlib"]

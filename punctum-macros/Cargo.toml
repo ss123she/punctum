@@ -1,7 +1,13 @@
 [package]
 name = "punctum-macros"
-version = "0.1.0"
-edition = "2024"
+description = "Procedural macros for punctum: #[gpu_kernel] and include_spv!"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [lib]
 proc-macro = true

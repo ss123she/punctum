@@ -1,7 +1,13 @@
 [package]
 name = "punctum-common"
-version = "0.1.0"
-edition = "2024"
+description = "Shared shader toolkit for punctum: math, canvas, text, HUD and audio spectrum, usable on both GPU and CPU"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [lib]
 crate-type = ["rlib"]
