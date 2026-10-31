@@ -6,9 +6,6 @@ use crate::{
     UserResource, WindowConfig, app::runner::Runner, configs::UpdateFn,
 };
 
-// #[cfg(target_arch = "wasm32")]
-// use wasm_bindgen::prelude::*;
-
 const DEFAULT_RENDER_SHADER: &'_ str = include_str!("pipeline/default_render.wgsl");
 const DEFAULT_COMPUTE_SPV: &'_ [u8] = include_bytes!(env!("COMPUTE_SPV"));
 
@@ -170,14 +167,6 @@ impl Builder {
         #[cfg(not(target_arch = "wasm32"))]
         env_logger::init();
 
-        // #[cfg(target_arch = "wasm32")]
-        // {
-        //     use wasm_bindgen::UnwrapThrowExt;
-        //     use winit::platform::web::EventLoopExtWebSys;
-        //     console_error_panic_hook::set_once();
-        //     let _ = console_log::init_with_level(log::Level::Info);
-        // }
-
         let event_loop = EventLoop::with_user_event().build()?;
 
         #[allow(unused_mut)]
@@ -186,26 +175,6 @@ impl Builder {
         #[cfg(not(target_arch = "wasm32"))]
         event_loop.run_app(&mut runner)?;
 
-        // #[cfg(target_arch = "wasm32")]
-        // {
-        //     use winit::platform::web::EventLoopExtWebSys;
-        //     event_loop.spawn_app(runner);
-        // }
-
         Ok(())
     }
 }
-
-// #[cfg(target_arch = "wasm32")]
-// #[wasm_bindgen]
-// pub fn start(canvas_id: Option<String>) -> Result<(), wasm_bindgen::JsValue> {
-//     use wasm_bindgen::UnwrapThrowExt;
-//
-//     let mut b = builder();
-//     if let Some(id) = canvas_id {
-//         b = b.with_canvas_id(id);
-//     }
-//     b.run().unwrap_throw();
-//
-//     Ok(())
-// }
