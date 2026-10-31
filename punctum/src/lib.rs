@@ -6,7 +6,9 @@ mod punctum;
 
 use configs::*;
 
+pub use anyhow;
 pub use configs::{BindingDescriptor, KernelDescriptor, KernelResourceType, UpdateContext};
 pub use punctum::{Builder, builder};
 pub use punctum_macros::{gpu_kernel, include_spv};
+pub use spirv_std;
 pub use wgpu;

@@ -54,7 +54,13 @@ fn main() -> anyhow::Result<()> {
 }
 ```
 
-*Add `punctum_bundler::run()` call in `build.rs` of your project*
+Make sure that your `build.rs` looks like:
+
+```rust
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    punctum_bundler::run(&punctum_bundler::Config::for_current_package())
+}
+```
 
 ## Run examples
 
