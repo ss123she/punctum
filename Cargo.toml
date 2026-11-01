@@ -1,7 +1,7 @@
 [workspace]
-members = ["punctum", "punctum-macros", "punctum-bundler", "shader-app", "shader-app-3d"]
+members = ["punctum", "punctum-macros", "punctum-bundler", "punctum-common", "shader-app", "shader-app-3d"]
 resolver = '2'
-exclude = ["default-shaders"]
+exclude = [".github/", ".gitignore"]
 
 [workspace.package]
 version = "0.1.0"

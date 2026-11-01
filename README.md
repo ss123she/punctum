@@ -20,6 +20,7 @@ A minimal framework for creating and launching compute shaders on pure Rust (bas
 * `punctum-bundler` - util for creating shaders shadow crate and compiling in SPIR-V.
 * `punctum-common` - common library (math, sdf, audio, text, canvas).
 * `shader-app` - example of an app. Audio visualizer that captures system audio with `cpal`.
+* `shader-app-3d` - another example of an app. Audio visualizer in 3d.
 
 ## Quick Start
 
@@ -100,6 +101,10 @@ cargo run --example simple
 Audio visualizer:
 ```bash
 cargo run -p shader-app
+```
+or
+```bash
+cargo run -p shader-app-3d
 ```
 
 ## License
