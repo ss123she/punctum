@@ -8,7 +8,7 @@
 
 A minimal framework for creating and launching compute shaders on pure Rust (based on `wgpu` and `rust-gpu`). Allows to write GPU code right in Rust project.
 
-https://github.com/user-attachments/assets/23fdd749-2970-4b28-8b1c-75b350f4b5ed
+https://github.com/user-attachments/assets/d496e0b1-aae3-4989-8699-74a9729460a0
 
 ## Benefits
 * **Shaders in Rust:** Use macros `#[gpu_kernel]` to compile Rust functions right in SPIR-V.
