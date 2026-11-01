@@ -8,6 +8,8 @@
 
 A minimal framework for creating and launching compute shaders on pure Rust (based on `wgpu` and `rust-gpu`). Allows to write GPU code right in Rust project.
 
+https://github.com/user-attachments/assets/23fdd749-2970-4b28-8b1c-75b350f4b5ed
+
 ## Benefits
 * **Shaders in Rust:** Use macros `#[gpu_kernel]` to compile Rust functions right in SPIR-V.
 * **Automatic Bundler:** Internal `punctum-bundler` automatically scans code, collects dependencies and compiling shaders on `build.rs` stage.
