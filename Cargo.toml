@@ -1,5 +1,5 @@
 [workspace]
-members = ["punctum", "punctum-macros", "punctum-bundler", "shader-app"]
+members = ["punctum", "punctum-macros", "punctum-bundler", "shader-app", "shader-app-3d"]
 resolver = '2'
 exclude = ["default-shaders"]
 

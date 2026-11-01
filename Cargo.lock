@@ -1874,7 +1874,7 @@ checksum = "3d595e54a326bc53c1c197b32d295e14b169e3cfeaa8dc82b529f947fba6bcf5"
 
 [[package]]
 name = "punctum"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "bytemuck",
@@ -2257,6 +2257,20 @@ dependencies = [
 
 [[package]]
 name = "shader-app"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cpal",
+ "glam",
+ "punctum",
+ "punctum-bundler",
+ "punctum-common",
+ "realfft",
+ "spirv-std",
+]
+
+[[package]]
+name = "shader-app-3d"
 version = "0.1.0"
 dependencies = [
  "anyhow",

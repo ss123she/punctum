@@ -1,0 +1,18 @@
+[package]
+name = "shader-app-3d"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+punctum.workspace = true
+punctum-common.workspace = true
+
+cpal = "0.18"
+realfft = "3.5"
+anyhow = "1"
+spirv-std = "0.11"
+glam = { version = "0.34", default-features = false }
+
+[build-dependencies]
+punctum-bundler.workspace = true
