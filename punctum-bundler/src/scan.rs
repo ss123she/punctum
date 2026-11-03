@@ -127,5 +127,8 @@ pub(crate) fn is_own_root(name: &str, source: &CrateSource) -> bool {
     if RESERVED_ROOTS.contains(&name) {
         return false;
     }
-    name == source.pkg_root || source.modules.get(name).copied() == Some(1)
+    let norm_name = name.replace('-', "_");
+    let norm_pkg = source.pkg_root.replace('-', "_");
+
+    norm_name == norm_pkg || source.modules.get(name).copied() == Some(1)
 }

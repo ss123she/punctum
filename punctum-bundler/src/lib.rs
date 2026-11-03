@@ -77,7 +77,8 @@ pub fn run(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let lock_versions = load_lock_versions();
-    let direct_deps = load_direct_dependencies();
+    let direct_deps_map = load_direct_dependencies();
+    let direct_deps: std::collections::HashSet<String> = direct_deps_map.into_keys().collect();
     let resolved = resolve_all(&source, &kernel_indices, &direct_deps, &config.skip_roots);
     for warning in &resolved.warnings {
         println!("cargo:warning={warning}");

@@ -36,6 +36,9 @@ pub(crate) fn compile_shader_crate(
     let spv_result = builder
         .capability(Capability::ImageQuery)
         .capability(Capability::StorageImageWriteWithoutFormat)
+        .capability(Capability::Float64)
+        .capability(Capability::Int64)
+        .capability(Capability::Int8)
         .build()?;
 
     Ok(spv_result.module.unwrap_single().to_path_buf())

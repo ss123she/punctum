@@ -187,10 +187,12 @@ pub(crate) fn process_uses(
         }
     }
 
+    let norm_pkg = source.pkg_root.replace('-', "_");
     for name in referenced {
+        let norm_name = name.replace('-', "_");
         if index.contains_key(name)
             || source.modules.contains_key(name)
-            || *name == source.pkg_root
+            || norm_name == norm_pkg
             || name == "spirv_std"
             || RESERVED_ROOTS.contains(&name.as_str())
         {
